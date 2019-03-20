@@ -24,11 +24,15 @@ class Models {
 	private function __construct() {}
 	private function __clone() {}
 
+
+
+
     /**
    	* Get the singleton instance
 	* @param none
 	* @return Auth
 	*/
+
 	public static function getInstance() {
 
 		if (static::$instance === NULL) {
@@ -39,11 +43,17 @@ class Models {
 
 
 
+
+	/**
+	* deleteOldAppointments - Clears out the patients entries in the channel_data and channel_title tables
+	*
+	* @return nothing
+	*/
+
 	public function deleteOldAppointments() {
 
 		try {
 
-			echo 'Deleting old appointments' . PHP_EOL;
 			$db = Database::getInstance();
 
             $stmt = $db->prepare('DELETE d, t FROM exp_channel_data d INNER JOIN exp_channel_titles t ON d.entry_id = t.entry_id WHERE t.channel_id = 4');
@@ -56,11 +66,17 @@ class Models {
 
 
 
+
+	/**
+	* deleteTempTables - Deletes all temp tables that were created during the import
+	*
+	* @return nothing
+	*/
+
 	public function deleteTempTables() {
 
 		try {
 
-			echo 'Deleting temp tables' . PHP_EOL;
 			$db = Database::getInstance();
 
             $stmt = $db->prepare('DROP TABLE IF EXISTS temp_csv, temp_channel_titles, temp_channel_data');
@@ -73,11 +89,17 @@ class Models {
 
 
 
+
+	/**
+	* createTempTables - Creates all of the temp tables that are needed for the import
+	*
+	* @return nothing
+	*/
+
 	public function createTempTables() {
 
 		try {
 
-			echo 'Creating temp tables' . PHP_EOL;
 			$db = Database::getInstance();
 
             $stmt = $db->prepare('CREATE TABLE temp_csv(
@@ -108,11 +130,18 @@ class Models {
 
 
 	
+
+	/**
+	* titleAuthorFind - Find the practice given the shipping_code
+	*
+	* @param array $data - An array with the shipping_code
+	* @return $result - The author_id which is from field_id_8 
+	*/
+
 	public function titleAuthorFind($data) {
 
 		try {
 
-			echo 'Looking up title author ID' . PHP_EOL;
 			$db = Database::getInstance();
 
             $stmt = $db->prepare('SELECT field_id_8 from exp_channel_data WHERE field_id_17 = :shipping AND channel_id = 3');
@@ -130,11 +159,17 @@ class Models {
  
 
 
+
+	/**
+	* titlesTableCount - Count how many patient entries are in the exp_channel_titles table
+	*
+	* @return $result - The total count
+	*/
+
 	public function titlesTableCount() {
 
 		try {
 
-			echo 'Counting channel titles for channel_id 4' . PHP_EOL;
 			$db = Database::getInstance();
 
             $stmt = $db->prepare('SELECT COUNT(*) FROM exp_channel_titles WHERE channel_id = 4');
@@ -144,6 +179,7 @@ class Models {
 			if($result !== false) {
 				return $result;
 			}
+
 		} catch(PDOException $exception) {
 			error_log($exception->getMessage());
 		}
@@ -151,11 +187,17 @@ class Models {
 
 
 
+
+	/**
+	* dataTableCount - Count how many patient entries are in the exp_channel_data table
+	*
+	* @return $result - The total count
+	*/
+
 	public function dataTableCount() {
 
 		try {
 
-			echo 'Counting channel data for ID 4' . PHP_EOL;
 			$db = Database::getInstance();
 
             $stmt = $db->prepare('SELECT COUNT(*) FROM exp_channel_data WHERE channel_id = 4');
@@ -165,6 +207,7 @@ class Models {
 			if($result !== false) {
 				return $result;
 			}
+
 		} catch(PDOException $exception) {
 			error_log($exception->getMessage());
 		}
@@ -172,11 +215,17 @@ class Models {
 
 
 	
+
+	/**
+	* tempTitlesCount - Count how many patient entries are in the exp_channel_data table
+	*
+	* @return $result - The total count
+	*/
+
 	public function tempTitlesCount() {
 
 		try {
 
-			echo 'Counting titles from temp_channel_titles' . PHP_EOL;
 			$db = Database::getInstance();
 
             $stmt = $db->prepare('SELECT COUNT(*) FROM temp_channel_titles');
@@ -186,6 +235,7 @@ class Models {
 			if($result !== false) {
 				return $result;
 			}
+
 		} catch(PDOException $exception) {
 			error_log($exception->getMessage());
 		}
@@ -193,11 +243,17 @@ class Models {
 
 
 
+
+	/**
+	* tempDataCount - Count how many patient entries are in the temp_channel_data table
+	*
+	* @return $result - The total count
+	*/
+
 	public function tempDataCount() {
 
 		try {
 
-			echo 'Counting titles from temp_channel_data' . PHP_EOL;
 			$db = Database::getInstance();
 
             $stmt = $db->prepare('SELECT COUNT(*) FROM temp_channel_data');
@@ -213,6 +269,14 @@ class Models {
 		}
 	}
 
+
+
+	/**
+	* csvInsertSql - Inserts temp data into the temp_csv table
+	*
+	* @param array $data - An array with the patient information
+	* @return nothing
+	*/
 
 	public function csvInsertSql($data) {
 
@@ -250,27 +314,13 @@ class Models {
 
 
 
-	// public function csvTableGet() {
 
-	// 	try {
-
-	// 		echo 'Getting the table data ...' . PHP_EOL;
-	// 		$db = Database::getInstance();
-
-    //         $stmt = $db->prepare('SELECT * FROM temp_csv');
-	// 		$stmt->execute();
-	// 		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-	// 		if($result !== false) {
-	// 			return $result;
-	// 		}
-
-	// 	} catch(PDOException $exception) {
-	// 		error_log($exception->getMessage());
-	// 	}
-	// }
-
-
+	/**
+	* titlesInsertNewSql - Inserts data into the exp_channel_titles table
+	*
+	* @param array $data - An array with the patient information
+	* @return nothing
+	*/
 
 	public function titlesInsertNewSql($data) {
 
@@ -305,6 +355,14 @@ class Models {
 	}
 
 
+
+
+	/**
+	* dataInsertNewSql - Inserts data into the exp_channel_titles table
+	*
+	* @param array $data - An array with the patient information
+	* @return nothing
+	*/
 
 	public function dataInsertNewSql($data) {
 
@@ -361,11 +419,18 @@ class Models {
 
 
 
+
+	/**
+	* getLastEntry - Gets the last entry from the exp_channel_titles. This is needed for making
+	*                entries in the exp_channel_data table
+	*
+	* @return $result - The entry_id
+	*/
+
 	public function getLastEntry() {
 
 		try {
 
-			echo 'Getting the last entry_id from exp_channel_titles' . PHP_EOL;
 			$db = Database::getInstance();
 
             $stmt = $db->prepare('SELECT @last_id := MAX(entry_id) FROM exp_channel_titles; SELECT entry_id FROM exp_channel_titles WHERE entry_id = @last_id;');
@@ -383,14 +448,19 @@ class Models {
 
 
 
+
+	/**
+	* titlesTableCountSql - Count how many patient entries are in the exp_channel_data table
+	*
+	* @return $result - The total count
+	*/
+
 	public function titlesTableCountSql() {
 
 		try {
 
-			echo 'Counting titles from temp_channel_data' . PHP_EOL;
 			$db = Database::getInstance();
 
-			//$titles_table_count_sql = 'SELECT COUNT(*) FROM exp_channel_titles WHERE channel_id = 4;';
             $stmt = $db->prepare('SELECT COUNT(*) FROM exp_channel_titles WHERE channel_id = 4');
 			$stmt->execute();
 			$result = $stmt->fetchColumn();
@@ -405,6 +475,13 @@ class Models {
 	}
 
 
+
+
+	/**
+	* channelsUpdateSql - Updates the exp_channel number of entries for the patient's channel
+	*
+	* @return nothing
+	*/
 
 	public function channelsUpdateSql() {
 

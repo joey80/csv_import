@@ -15,7 +15,7 @@ use Immerge\Importer\Models as Models;
 
 
 /**
- * Import - Importer For Richie Lab
+ * Import - Importer For Richey Lab
  *
  * @author Joey Leger
  * @author Immerge 2019
@@ -66,26 +66,14 @@ class Import {
 
                 // Get the author id
                 $author_id = $model->titleAuthorFind($shipping_code);
-                echo 'The author_id is: ' . $author_id . PHP_EOL;
 
-                // Count how many title entries for 'Patients' channel (id 4)
+                // Check to make sure that both table counts match
                 $titles_initial_count = $model->titlesTableCount();
-                echo 'The total title entries are: ' . $titles_initial_count . PHP_EOL;
-
-                // Count how many data entries for 'Patients' channel (id 4)
                 $data_initial_count = $model->dataTableCount();
-                echo 'The total data entries are: ' . $data_initial_count . PHP_EOL;
-
-                // Count how many titles are in the temp_channel_titles
                 $temp_titles_count = $model->tempTitlesCount();
-                echo 'The total temp titles are: ' . $temp_titles_count . PHP_EOL;
-
-                // Count how many titles are in the temp_channel_data
                 $temp_data_count = $model->tempDataCount();
-                echo 'The total temp data titles are ' . $temp_data_count . PHP_EOL;
 
-                // Check to make sure the both table counts match
-                if (($titles_initial_count == $temp_titles_count) && ($data_initial_count == $temp_data_count)) {
+                if (($titles_initial_count === $temp_titles_count) && ($data_initial_count === $temp_data_count)) {
                     echo 'Both tables backed up' . PHP_EOL;
                 } else {
                     echo 'Import has failed on backup table creation' . PHP_EOL;
@@ -94,25 +82,21 @@ class Import {
 
                 // Get the total row count from the .csv
                 $highestRow = $spreadsheet->getActiveSheet()->getHighestRow();
-                echo 'Total amount of rows are: ' . $highestRow . PHP_EOL;
 
-                // Ignore empty .csv's - All of them should have at least one header row
+                // Ignore empty .csv's - (All of them should have at least one header row)
                 if ($highestRow > 1) {
 
                     // Keep track of how many insertions we've done
                     $titles_insertion_count = 0;
                     $data_insertion_count = 0;
 
-                    // Iterate through each row of the .csv - Starting on the second row to exclude the header
+                    // Iterate through each row of the .csv - Starting with the second row to exclude the header
                     for ($i = 2; $i <= $highestRow; $i++) {
 
                         // Get each row from the .csv and return it as an array - We need columns A through L
                         $data_array = $spreadsheet->getActiveSheet()->rangeToArray(
                             'A' . $i . ':L' . $i, NULL, TRUE, TRUE, TRUE
                         );
-
-                        // echo 'The data array is:' . PHP_EOL;
-                        // echo print_r($data_array) . PHP_EOL;
 
                         // Build an array with the values and clean up the capitalization
                         $sql_data = [
@@ -130,11 +114,10 @@ class Import {
                             'patient_email'     => strtolower($data_array[$i]['L']),
                         ];
                         
-                        // Insert the row from the .csv into the table
+                        // Insert this row from the .csv into temp_csv
                         $model->csvInsertSql($sql_data);
-                        echo 'Inserting data for row ' . $i . PHP_EOL;
 
-                        // Get the date and then build new array for insert query
+                        // Get the date and then build a new array
                         $date = date("Y-m-d H:i:s");
                         $entry_date = strtotime($date);
 
@@ -154,14 +137,12 @@ class Import {
                         ];
 
                         // Insert the new record into exp_channel_titles and update the counter
-                        echo 'Inserting new SQL' . PHP_EOL;
                         $model->titlesInsertNewSql($sql_data2);
                         $titles_insertion_count++;
 
                         // Get the auto-encremented entry_id from exp_channel_titles
                         // We need this in order to make the same entry_id into exp_channel_data
                         $last_entry = $model->getLastEntry();
-                        echo 'The last entry_id is: ' . $last_entry . PHP_EOL;
 
                         // Build new array for insert query
                         $sql_data3 = [
@@ -195,45 +176,39 @@ class Import {
                         ];
 
                         // Insert the new record into exp_channel_data and update the counter
-                        echo 'Inserting even newer SQL' . PHP_EOL;
                         $model->dataInsertNewSql($sql_data3);
                         $data_insertion_count++;
 
-                        // Count how many title entries for 'Patients' channel (id 4)
-                        $titles_final_count = $model->titlesTableCount();
-                        echo 'The total title entries are: ' . $titles_final_count . PHP_EOL;
-
-                        // Count how many data entries for 'Patients' channel (id 4)
-                        $data_final_count = $model->dataTableCount();
-                        echo 'The total data entries are: ' . $data_final_count . PHP_EOL;
-
                         // Check to make sure that the count matches what was inserted
-                        if (!$titles_final_count == $titles_insertion_count) {
+                        $titles_final_count = $model->titlesTableCount();
+                        $data_final_count = $model->dataTableCount();
+
+                        if (!$titles_final_count === $titles_insertion_count) {
                             echo 'Import has failed on new channel titles record insertion' . PHP_EOL;
-                        } else {
-                            echo 'Import was a success for channel titles' . PHP_EOL;
                         }
 
-                        if (!$data_final_count == $data_insertion_count) {
+                        if (!$data_final_count === $data_insertion_count) {
                             echo 'Import has failed on new channel data record insertion' . PHP_EOL;
-                        } else {
-                            echo 'Import was a success for channel data' . PHP_EOL;
                         }
                     }
                 
                 } else {
+
+                    // Move on if the .csv file is empty
                     echo 'Skipping this one because its blank' . PHP_EOL;
                 }
             }
 
+            // End of the current .csv
+            echo 'import successful for ' . $shipping_code . PHP_EOL;
             echo '---------------------------------' . PHP_EOL;
         }
         
+        // Unset the value from the foreach loop
         unset($value);
 
         // Update the total entries for the Patients channel
         $model->channelsUpdateSql();
-        echo 'Updating the exp_channel total entries for Patients' . PHP_EOL;
 
         // Clean up the temp tables
         $model->deleteTempTables();

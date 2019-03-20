@@ -99,6 +99,10 @@ class Import {
                 // Ignore empty .csv's - All of them should have at least one header row
                 if ($highestRow > 1) {
 
+                    // Keep track of how many insertions we've done
+                    $titles_insertion_count = 0;
+                    $data_insertion_count = 0;
+
                     // Iterate through each row of the .csv - Starting on the second row to exclude the header
                     for ($i = 2; $i <= $highestRow; $i++) {
 
@@ -130,12 +134,6 @@ class Import {
                         $model->csvInsertSql($sql_data);
                         echo 'Inserting data for row ' . $i . PHP_EOL;
 
-                        // Get an array of all values from the temp_csv table and see how big it is
-                        // $results = $model->csvTableGet();
-                        // $rows = sizeof($results);
-                        // echo 'The results are:' . PHP_EOL;
-                        // echo print_r($results) . PHP_EOL;
-
                         // Get the date and then build new array for insert query
                         $date = date("Y-m-d H:i:s");
                         $entry_date = strtotime($date);
@@ -155,79 +153,91 @@ class Import {
                             'day'                => date("j")
                         ];
 
+                        // Insert the new record into exp_channel_titles and update the counter
                         echo 'Inserting new SQL' . PHP_EOL;
                         $model->titlesInsertNewSql($sql_data2);
+                        $titles_insertion_count++;
 
-                        // Build new array for insert query
-                        $field_ft = 'none';
-                        $sql_data3 = [
-                            'site_id'      => 1,
-                            'channel_id'   => 4,
-                            'field_id_162' => $sql_data['patient_number'],
-                            'field_ft_162' => $field_ft,
-                            'field_id_163' => $sql_data['patient_lastname'],
-                            'field_ft_163' => $field_ft,
-                            'field_id_164' => $sql_data['patient_firstname'],
-                            'field_ft_164' => $field_ft,
-                            'field_id_165' => $sql_data['patient_street'],
-                            'field_ft_165' => $field_ft,
-                            'field_id_166' => $sql_data['patient_address2'],
-                            'field_ft_166' => $field_ft,
-                            'field_id_167' => $sql_data['patient_city'],
-                            'field_ft_167' => $field_ft,
-                            'field_id_168' => $sql_data['patient_state'],
-                            'field_ft_168' => $field_ft,
-                            'field_id_169' => $sql_data['patient_zip'],
-                            'field_ft_169' => $field_ft,
-                            'field_id_170' => $sql_data['patient_phone'],
-                            'field_ft_170' => $field_ft,
-                            'field_id_171' => $sql_data['patient_phone2'],
-                            'field_ft_171' => $field_ft,
-                            'field_id_172' => $sql_data['patient_phone3'],
-                            'field_ft_172' => $field_ft,
-                            'field_id_173' => $sql_data['patient_email'],
-                            'field_ft_173' => $field_ft,
-                        ];
-
+                        // Get the auto-encremented entry_id from exp_channel_titles
+                        // We need this in order to make the same entry_id into exp_channel_data
                         $last_entry = $model->getLastEntry();
                         echo 'The last entry_id is: ' . $last_entry . PHP_EOL;
 
-                        // echo 'Inserting even newer SQL' . PHP_EOL;
-                        // $model->dataInsertNewSql($sql_data3);
+                        // Build new array for insert query
+                        $sql_data3 = [
+                            'entry_id'     => $last_entry,
+                            'site_id'      => 1,
+                            'channel_id'   => 4,
+                            'field_id_162' => $sql_data['patient_number'],
+                            'field_ft_162' => 'none',
+                            'field_id_163' => $sql_data['patient_lastname'],
+                            'field_ft_163' => 'none',
+                            'field_id_164' => $sql_data['patient_firstname'],
+                            'field_ft_164' => 'none',
+                            'field_id_165' => $sql_data['patient_street'],
+                            'field_ft_165' => 'none',
+                            'field_id_166' => $sql_data['patient_address2'],
+                            'field_ft_166' => 'none',
+                            'field_id_167' => $sql_data['patient_city'],
+                            'field_ft_167' => 'none',
+                            'field_id_168' => $sql_data['patient_state'],
+                            'field_ft_168' => 'none',
+                            'field_id_169' => $sql_data['patient_zip'],
+                            'field_ft_169' => 'none',
+                            'field_id_170' => $sql_data['patient_phone'],
+                            'field_ft_170' => 'none',
+                            'field_id_171' => $sql_data['patient_phone2'],
+                            'field_ft_171' => 'none',
+                            'field_id_172' => $sql_data['patient_phone3'],
+                            'field_ft_172' => 'none',
+                            'field_id_173' => $sql_data['patient_email'],
+                            'field_ft_173' => 'none',
+                        ];
 
-                        // $table_count = $model->titlesTableCountSql();
-                        // echo 'The table count is: ' . $table_count . PHP_EOL;
+                        // Insert the new record into exp_channel_data and update the counter
+                        echo 'Inserting even newer SQL' . PHP_EOL;
+                        $model->dataInsertNewSql($sql_data3);
+                        $data_insertion_count++;
 
-                    //     cursor.execute(titles_table_count_sql)
-                    // result = cursor.fetchone()
-                    // if titles_initial_count + titles_insertion_count \
-                    //     != int(result[0]):
-                    //     raise ImportException('Import has failed on new channel titles record insertion'
-                    //             )
+                        // Count how many title entries for 'Patients' channel (id 4)
+                        $titles_final_count = $model->titlesTableCount();
+                        echo 'The total title entries are: ' . $titles_final_count . PHP_EOL;
 
+                        // Count how many data entries for 'Patients' channel (id 4)
+                        $data_final_count = $model->dataTableCount();
+                        echo 'The total data entries are: ' . $data_final_count . PHP_EOL;
+
+                        // Check to make sure that the count matches what was inserted
+                        if (!$titles_final_count == $titles_insertion_count) {
+                            echo 'Import has failed on new channel titles record insertion' . PHP_EOL;
+                        } else {
+                            echo 'Import was a success for channel titles' . PHP_EOL;
+                        }
+
+                        if (!$data_final_count == $data_insertion_count) {
+                            echo 'Import has failed on new channel data record insertion' . PHP_EOL;
+                        } else {
+                            echo 'Import was a success for channel data' . PHP_EOL;
+                        }
                     }
                 
                 } else {
                     echo 'Skipping this one because its blank' . PHP_EOL;
                 }
-
-                
-            
-               
-
-                // 
-                // $titles_insertion_count = 0;
-                // $data_insertion_count = 0;
-
-                // For testing purposes
-                // $cellValue = $spreadsheet->getActiveSheet()->getCell('A1')->getValue();
-                // echo 'A1 is ' . $cellValue . PHP_EOL;
             }
-            
+
             echo '---------------------------------' . PHP_EOL;
         }
-
+        
         unset($value);
+
+        // Update the total entries for the Patients channel
+        $model->channelsUpdateSql();
+        echo 'Updating the exp_channel total entries for Patients' . PHP_EOL;
+
+        // Clean up the temp tables
+        $model->deleteTempTables();
+        echo 'Final cleanup of the temp tables' . PHP_EOL;
     }
   
 }

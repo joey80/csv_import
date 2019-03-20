@@ -46,8 +46,7 @@ class Models {
 			echo 'Deleting old appointments' . PHP_EOL;
 			$db = Database::getInstance();
 
-            //$stmt = $db->prepare('DELETE d, t FROM exp_channel_data d INNER JOIN exp_channel_titles t ON d.entry_id = t.entry_id WHERE t.channel_id = 4');
-			$stmt = $db->prepare('DELETE FROM exp_channel_data WHERE channel_id = 4; DELETE FROM exp_channel_titles WHERE channel_id = 4');
+            $stmt = $db->prepare('DELETE d, t FROM exp_channel_data d INNER JOIN exp_channel_titles t ON d.entry_id = t.entry_id WHERE t.channel_id = 4');
 			$stmt->execute();
 
 		} catch(PDOException $exception) {
@@ -135,7 +134,7 @@ class Models {
 
 		try {
 
-			echo 'Counting channel titles for ID 4' . PHP_EOL;
+			echo 'Counting channel titles for channel_id 4' . PHP_EOL;
 			$db = Database::getInstance();
 
             $stmt = $db->prepare('SELECT COUNT(*) FROM exp_channel_titles WHERE channel_id = 4');
@@ -313,18 +312,19 @@ class Models {
 			
 			$db = Database::getInstance();
 
-            $stmt = $db->prepare('INSERT INTO exp_channel_data (site_id, channel_id, field_id_162, field_ft_162, field_id_163,
+            $stmt = $db->prepare('INSERT INTO exp_channel_data (entry_id, site_id, channel_id, field_id_162, field_ft_162, field_id_163,
 																field_ft_163, field_id_164, field_ft_164, field_id_165, field_ft_165,
 																field_id_166, field_ft_166, field_id_167, field_ft_167, field_id_168,
 																field_ft_168, field_id_169, field_ft_169, field_id_170, field_ft_170,
 																field_id_171, field_ft_171, field_id_172, field_ft_172, field_id_173, field_ft_173)
 														
-																VALUES (:site_id, :channel_id, :field_id_162, :field_ft_162, :field_id_163,
+																VALUES (:entry_id, :site_id, :channel_id, :field_id_162, :field_ft_162, :field_id_163,
 																:field_ft_163, :field_id_164, :field_ft_164, :field_id_165, :field_ft_165,
 																:field_id_166, :field_ft_166, :field_id_167, :field_ft_167, :field_id_168,
 																:field_ft_168, :field_id_169, :field_ft_169, :field_id_170, :field_ft_170,
 																:field_id_171, :field_ft_171, :field_id_172, :field_ft_172, :field_id_173, :field_ft_173)');
 
+			$stmt->bindParam(':entry_id', $data['entry_id']);
 			$stmt->bindParam(':site_id', $data['site_id']);
 			$stmt->bindParam(':channel_id', $data['channel_id']);
 			$stmt->bindParam(':field_id_162', $data['field_id_162']);
@@ -365,16 +365,58 @@ class Models {
 
 		try {
 
-			echo 'Getting the last entry_id from exp_channel_data' . PHP_EOL;
+			echo 'Getting the last entry_id from exp_channel_titles' . PHP_EOL;
 			$db = Database::getInstance();
 
-            $stmt = $db->prepare('SELECT @last_id := MAX(entry_id) FROM exp_channel_data; SELECT entry_id FROM exp_channel_data WHERE entry_id = @last_id;');
+            $stmt = $db->prepare('SELECT @last_id := MAX(entry_id) FROM exp_channel_titles; SELECT entry_id FROM exp_channel_titles WHERE entry_id = @last_id;');
 			$stmt->execute();
 			$result = $stmt->fetchColumn();
 
 			if($result !== false) {
 				return $result;
 			}
+
+		} catch(PDOException $exception) {
+			error_log($exception->getMessage());
+		}
+	}
+
+
+
+	public function titlesTableCountSql() {
+
+		try {
+
+			echo 'Counting titles from temp_channel_data' . PHP_EOL;
+			$db = Database::getInstance();
+
+			//$titles_table_count_sql = 'SELECT COUNT(*) FROM exp_channel_titles WHERE channel_id = 4;';
+            $stmt = $db->prepare('SELECT COUNT(*) FROM exp_channel_titles WHERE channel_id = 4');
+			$stmt->execute();
+			$result = $stmt->fetchColumn();
+
+			if($result !== false) {
+				return $result;
+			}
+
+		} catch(PDOException $exception) {
+			error_log($exception->getMessage());
+		}
+	}
+
+
+
+	public function channelsUpdateSql() {
+
+		try {
+
+			$db = Database::getInstance();
+
+            $stmt = $db->prepare('UPDATE `exp_channels`
+									SET `total_entries` = (SELECT COUNT(*) FROM exp_channel_data WHERE channel_id = 4)
+									WHERE `channel_id` = 4');
+
+			$stmt->execute();
 
 		} catch(PDOException $exception) {
 			error_log($exception->getMessage());

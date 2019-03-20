@@ -11,7 +11,7 @@ use PDO;
  */
 
 class Database {
-
+  
   private static $_db;
   private function __construct() {}
   private function __clone() {}

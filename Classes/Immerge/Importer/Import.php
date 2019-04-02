@@ -173,7 +173,7 @@ class Import
         $scanned_folders = array_diff(scandir($root_path) , array('..', '.'));
 
         // Scan the files that are inside each of the subfolders inside of the cron folder
-        foreach ($scanned_folders as & $folder)
+        foreach ($scanned_folders as $folder)
         {
             $scanned_file = array_diff(scandir($root_path . '/' . $folder) , array('..', '.'));
 
@@ -293,9 +293,6 @@ class Import
 
             echo '---------------------------------' . PHP_EOL;
         }
-
-        // Unset the value from the foreach loop
-        unset($value);
 
         // Update the total entries for the Patients channel
         static ::$model->channelsUpdateSql();

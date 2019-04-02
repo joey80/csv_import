@@ -5,11 +5,11 @@ spl_autoload_register(function ($className) {
     include_once '/var/www/html/scripts/Classes/' . $className . '.php';
 });
 
-use Immerge\Importer\Import as Import;
+use Immerge\Importer\Export as Export;
 
 
 /**
- * Patient Importer For Richey Lab
+ * Order Exporter For Richey Lab
  * 
  * Description: This will import a listing of patients for Richey Lab. This is currently
  *              set up as a cron job that runs nightly. First, it will scrub the database
@@ -28,7 +28,7 @@ use Immerge\Importer\Import as Import;
  * @author Immerge 2019
  */
 
-$run = new Import();
+$run = new Export();
 $run->main();
 
 ?>

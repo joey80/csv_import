@@ -6,7 +6,7 @@ use Immerge\Importer\Database as Database;
 spl_autoload_register(function ($className)
 {
     $className = str_replace("\\", DIRECTORY_SEPARATOR, $className);
-    include_once '/var/www/scripts/Classes/' . $className . '.php';
+    include_once '/var/www/html/scripts/Classes/' . $className . '.php';
 });
 
 /**
@@ -119,7 +119,7 @@ class Models
             $db = Database::getInstance();
 
             $stmt = $db->prepare('CREATE TABLE temp_csv(
-									patient_number 		VARCHAR(10) NOT NULL PRIMARY KEY,
+									patient_number 		VARCHAR(20) NOT NULL PRIMARY KEY,
 									patient_lastname	VARCHAR(50),
 									patient_firstname	VARCHAR(50),
 									patient_street		VARCHAR(100),
@@ -164,6 +164,7 @@ class Models
 
             $db = Database::getInstance();
 
+            echo 'looking up ' . $data . PHP_EOL;
             $stmt = $db->prepare('SELECT field_id_8 from exp_channel_data WHERE field_id_17 = :shipping AND channel_id = 3');
             $stmt->execute(array(
                 ':shipping' => $data
@@ -426,13 +427,13 @@ class Models
 
             $db = Database::getInstance();
 
-            $stmt = $db->prepare('INSERT INTO exp_channel_data (entry_id, site_id, channel_id, field_id_162, field_ft_162, field_id_163,
+            $stmt = $db->prepare('INSERT INTO exp_channel_data (entry_id, site_id, channel_id, field_id_8, field_id_162, field_ft_162, field_id_163,
 																field_ft_163, field_id_164, field_ft_164, field_id_165, field_ft_165,
 																field_id_166, field_ft_166, field_id_167, field_ft_167, field_id_168,
 																field_ft_168, field_id_169, field_ft_169, field_id_170, field_ft_170,
 																field_id_171, field_ft_171, field_id_172, field_ft_172, field_id_173, field_ft_173)
 
-																VALUES (:entry_id, :site_id, :channel_id, :field_id_162, :field_ft_162, :field_id_163,
+																VALUES (:entry_id, :site_id, :channel_id, :field_id_8, :field_id_162, :field_ft_162, :field_id_163,
 																:field_ft_163, :field_id_164, :field_ft_164, :field_id_165, :field_ft_165,
 																:field_id_166, :field_ft_166, :field_id_167, :field_ft_167, :field_id_168,
 																:field_ft_168, :field_id_169, :field_ft_169, :field_id_170, :field_ft_170,
@@ -441,6 +442,7 @@ class Models
             $stmt->bindParam(':entry_id', $data['entry_id']);
             $stmt->bindParam(':site_id', $data['site_id']);
             $stmt->bindParam(':channel_id', $data['channel_id']);
+            $stmt->bindParam(':field_id_8', $data['field_id_8']);
             $stmt->bindParam(':field_id_162', $data['field_id_162']);
             $stmt->bindParam(':field_ft_162', $data['field_ft_162']);
             $stmt->bindParam(':field_id_163', $data['field_id_163']);

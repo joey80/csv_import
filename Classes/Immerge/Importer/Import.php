@@ -4,10 +4,10 @@ namespace Immerge\Importer;
 spl_autoload_register(function ($className)
 {
     $className = str_replace("\\", DIRECTORY_SEPARATOR, $className);
-    include_once '/var/www/scripts/Classes/' . $className . '.php';
+    include_once '/var/www/html/scripts/Classes/' . $className . '.php';
 });
 
-require '/var/www/scripts/vendor/autoload.php';
+require '/var/www/html/scripts/vendor/autoload.php';
 use Immerge\Importer\Models as Models;
 
 /**
@@ -22,6 +22,7 @@ class Import
 
     private static $model;
     private static $sql_data;
+
     public function __construct()
     {
     }
@@ -43,7 +44,7 @@ class Import
     public function temp_csv_insert($array, $i)
     {
 
-        // Build an array with the values and clean up the capitalization
+        // Build an array with the values and clean up the capitalization and lengths
         static ::$sql_data = [
             'patient_number' => $array[$i]['A'],
             'patient_lastname' => ucfirst(strtolower($array[$i]['B'])),
@@ -52,10 +53,10 @@ class Import
             'patient_address2' => ucfirst(strtolower($array[$i]['E'])),
             'patient_city' => ucfirst(strtolower($array[$i]['F'])),
             'patient_state' => strtoupper($array[$i]['G']),
-            'patient_zip' => $array[$i]['H'],
-            'patient_phone' => $array[$i]['I'],
-            'patient_phone2' => $array[$i]['J'],
-            'patient_phone3' => $array[$i]['K'],
+            'patient_zip' => substr($array[$i]['H'], 0,4),
+            'patient_phone' => substr($array[$i]['I'], 0,9),
+            'patient_phone2' => substr($array[$i]['J'], 0,9),
+            'patient_phone3' => substr($array[$i]['K'], 0,9),
             'patient_email' => strtolower($array[$i]['L'])
         ];
 
@@ -109,7 +110,7 @@ class Import
      * @return nothing
      */
 
-    public function channel_data_insert($last_entry)
+    public function channel_data_insert($last_entry, $author_id)
     {
 
         // Build new array for insert query
@@ -117,6 +118,7 @@ class Import
             'entry_id' => $last_entry,
             'site_id' => 1,
             'channel_id' => 4,
+            'field_id_8' => $author_id,
             'field_id_162' => static ::$sql_data['patient_number'],
             'field_ft_162' => 'none',
             'field_id_163' => static ::$sql_data['patient_lastname'],
@@ -146,6 +148,9 @@ class Import
         // Insert the new record into exp_channel_data and update the counter
         static ::$model->dataInsertNewSql($sql_data3);
     }
+
+
+
 
     /**
      * main - The main controller for the Importer. It reads through .csv's that are nested
@@ -252,7 +257,7 @@ class Import
                         $last_entry = static ::$model->getLastEntry();
 
                         // Insert the new record into exp_channel_data and update the counter
-                        $this->channel_data_insert($last_entry);
+                        $this->channel_data_insert($last_entry, $author_id);
                         $data_insertion_count++;
 
                         // Check to make sure that the count matches what was inserted

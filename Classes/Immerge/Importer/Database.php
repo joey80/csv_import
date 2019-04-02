@@ -31,7 +31,7 @@ class Database
 
     public static function getInstance()
     {
-        include_once '/var/www/scripts/config.php';
+        include_once '/var/www/html/scripts/config.php';
 
         if (static::$_db === null) {
             $dsn = 'mysql:host=' . $host . ';dbname=' . $name . ';charset=utf8';

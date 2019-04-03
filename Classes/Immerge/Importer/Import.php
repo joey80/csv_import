@@ -20,12 +20,12 @@ use Immerge\Importer\Models as Models;
 class Import
 {
 
-    private static $model;
-    private static $sql_data;
+    public static $model;
+    public $sql_data;
 
     public function __construct()
     {
-        static ::$model = Models::getInstance();
+        static::$model = Models::getInstance();
     }
 
 
@@ -43,7 +43,7 @@ class Import
     {
 
         // Build an array with the values and clean up the capitalization and lengths
-        static ::$sql_data = [
+        $this->sql_data = [
             'patient_number' => $array[$i]['A'],
             'patient_lastname' => ucfirst(strtolower($array[$i]['B'])),
             'patient_firstname' => ucfirst(strtolower($array[$i]['C'])),
@@ -59,7 +59,7 @@ class Import
         ];
 
         // Insert this row from the .csv into temp_csv
-        static ::$model->csvInsertSql(static ::$sql_data);
+        static::$model->csvInsertSql($this->sql_data);
     }
 
 
@@ -81,8 +81,8 @@ class Import
             'site_id' => 1,
             'channel_id' => 4,
             'author_id' => $author_id,
-            'title' => static ::$sql_data['patient_firstname'] . ' ' . static ::$sql_data['patient_lastname'],
-            'url_title' => strtolower(static ::$sql_data['patient_firstname'] . '-' . static ::$sql_data['patient_lastname']),
+            'title' => $this->sql_data['patient_firstname'] . ' ' . $this->sql_data['patient_lastname'],
+            'url_title' => strtolower($this->sql_data['patient_firstname'] . '-' . $this->sql_data['patient_lastname']),
             'status' => 'open',
             'versioning_enabled' => 'y',
             'allow_comments' => 'n',
@@ -93,7 +93,7 @@ class Import
         ];
 
         // Insert the new record into exp_channel_titles and update the counter
-        static ::$model->titlesInsertNewSql($sql_data2);
+        static::$model->titlesInsertNewSql($sql_data2);
     }
 
 
@@ -117,34 +117,34 @@ class Import
             'site_id' => 1,
             'channel_id' => 4,
             'field_id_8' => $author_id,
-            'field_id_162' => static ::$sql_data['patient_number'],
+            'field_id_162' => $this->sql_data['patient_number'],
             'field_ft_162' => 'none',
-            'field_id_163' => static ::$sql_data['patient_lastname'],
+            'field_id_163' => $this->sql_data['patient_lastname'],
             'field_ft_163' => 'none',
-            'field_id_164' => static ::$sql_data['patient_firstname'],
+            'field_id_164' => $this->sql_data['patient_firstname'],
             'field_ft_164' => 'none',
-            'field_id_165' => static ::$sql_data['patient_street'],
+            'field_id_165' => $this->sql_data['patient_street'],
             'field_ft_165' => 'none',
-            'field_id_166' => static ::$sql_data['patient_address2'],
+            'field_id_166' => $this->sql_data['patient_address2'],
             'field_ft_166' => 'none',
-            'field_id_167' => static ::$sql_data['patient_city'],
+            'field_id_167' => $this->sql_data['patient_city'],
             'field_ft_167' => 'none',
-            'field_id_168' => static ::$sql_data['patient_state'],
+            'field_id_168' => $this->sql_data['patient_state'],
             'field_ft_168' => 'none',
-            'field_id_169' => static ::$sql_data['patient_zip'],
+            'field_id_169' => $this->sql_data['patient_zip'],
             'field_ft_169' => 'none',
-            'field_id_170' => static ::$sql_data['patient_phone'],
+            'field_id_170' => $this->sql_data['patient_phone'],
             'field_ft_170' => 'none',
-            'field_id_171' => static ::$sql_data['patient_phone2'],
+            'field_id_171' => $this->sql_data['patient_phone2'],
             'field_ft_171' => 'none',
-            'field_id_172' => static ::$sql_data['patient_phone3'],
+            'field_id_172' => $this->sql_data['patient_phone3'],
             'field_ft_172' => 'none',
-            'field_id_173' => static ::$sql_data['patient_email'],
+            'field_id_173' => $this->sql_data['patient_email'],
             'field_ft_173' => 'none'
         ];
 
         // Insert the new record into exp_channel_data and update the counter
-        static ::$model->dataInsertNewSql($sql_data3);
+        static::$model->dataInsertNewSql($sql_data3);
     }
 
 
@@ -162,7 +162,7 @@ class Import
     {
 
         // Delete all existing patients from the DB
-        static ::$model->deleteOldAppointments();
+        static::$model->deleteOldAppointments();
 
         // Read through the subfolders inside the cron folder
         $root_path = '/var/www/html/crons/';
@@ -183,8 +183,8 @@ class Import
             {
 
                 // Clean up the temp tables
-                static ::$model->deleteTempTables();
-                static ::$model->createTempTables();
+                static::$model->deleteTempTables();
+                static::$model->createTempTables();
 
                 echo 'Reading ' . $theFile_name . PHP_EOL;
 
@@ -196,13 +196,13 @@ class Import
                 echo 'import started for ' . $shipping_code . PHP_EOL;
 
                 // Get the author id
-                $author_id = static ::$model->titleAuthorFind($shipping_code);
+                $author_id = static::$model->titleAuthorFind($shipping_code);
 
                 // Check to make sure that both table counts match
-                $titles_initial_count = static ::$model->titlesTableCount();
-                $data_initial_count = static ::$model->dataTableCount();
-                $temp_titles_count = static ::$model->tempTitlesCount();
-                $temp_data_count = static ::$model->tempDataCount();
+                $titles_initial_count = static::$model->titlesTableCount();
+                $data_initial_count = static::$model->dataTableCount();
+                $temp_titles_count = static::$model->tempTitlesCount();
+                $temp_data_count = static::$model->tempDataCount();
 
                 if (($titles_initial_count === $temp_titles_count) && ($data_initial_count === $temp_data_count))
                 {
@@ -250,15 +250,15 @@ class Import
 
                         // Get the auto-encremented entry_id from exp_channel_titles
                         // We need this in order to make the same entry_id into exp_channel_data
-                        $last_entry = static ::$model->getLastEntry();
+                        $last_entry = static::$model->getLastEntry();
 
                         // Insert the new record into exp_channel_data and update the counter
                         $this->channel_data_insert($last_entry, $author_id);
                         $data_insertion_count++;
 
                         // Check to make sure that the count matches what was inserted
-                        $titles_final_count = static ::$model->titlesTableCount();
-                        $data_final_count = static ::$model->dataTableCount();
+                        $titles_final_count = static::$model->titlesTableCount();
+                        $data_final_count = static::$model->dataTableCount();
 
                         if (!$titles_final_count === $titles_insertion_count)
                         {
@@ -291,10 +291,10 @@ class Import
         }
 
         // Update the total entries for the Patients channel
-        static ::$model->channelsUpdateSql();
+        static::$model->channelsUpdateSql();
 
         // Clean up the temp tables
-        static ::$model->deleteTempTables();
+        static::$model->deleteTempTables();
         echo 'Final cleanup of the temp tables' . PHP_EOL;
     }
 

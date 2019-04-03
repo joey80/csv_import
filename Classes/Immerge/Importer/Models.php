@@ -20,12 +20,12 @@ spl_autoload_register(function ($className)
 class Models
 {
 
-    private static $db;
-    private static $instance;
+    public static $db;
+    public static $instance;
 
-    private function __construct()
+    public function __construct()
     {
-        static ::$db = Database::getInstance();
+        static::$db = Database::getInstance();
     }
 
 
@@ -39,12 +39,11 @@ class Models
 
     public static function getInstance()
     {
-
-        if (static ::$instance === null)
+        if (static::$instance === null)
         {
-            static ::$instance = new Models();
+            static::$instance = new Models();
         }
-        return static ::$instance;
+        return static::$instance;
     }
 
 
@@ -62,7 +61,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('DELETE d, t FROM exp_channel_data d INNER JOIN exp_channel_titles t ON d.entry_id = t.entry_id WHERE t.channel_id = 4');
+            $stmt = static::$db->prepare('DELETE d, t FROM exp_channel_data d INNER JOIN exp_channel_titles t ON d.entry_id = t.entry_id WHERE t.channel_id = 4');
             $stmt->execute();
 
         }
@@ -87,7 +86,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('DROP TABLE IF EXISTS temp_csv, temp_channel_titles, temp_channel_data');
+            $stmt = static::$db->prepare('DROP TABLE IF EXISTS temp_csv, temp_channel_titles, temp_channel_data');
             $stmt->execute();
 
         }
@@ -112,7 +111,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('CREATE TABLE temp_csv(
+            $stmt = static::$db->prepare('CREATE TABLE temp_csv(
 									patient_number 		VARCHAR(20) NOT NULL PRIMARY KEY,
 									patient_lastname	VARCHAR(50),
 									patient_firstname	VARCHAR(50),
@@ -157,7 +156,7 @@ class Models
         {
 
             echo 'looking up ' . $data . PHP_EOL;
-            $stmt = static ::$db->prepare('SELECT field_id_8 from exp_channel_data WHERE field_id_17 = :shipping AND channel_id = 3');
+            $stmt = static::$db->prepare('SELECT field_id_8 from exp_channel_data WHERE field_id_17 = :shipping AND channel_id = 3');
             $stmt->execute(array(
                 ':shipping' => $data
             ));
@@ -190,7 +189,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('SELECT COUNT(*) FROM exp_channel_titles WHERE channel_id = 4');
+            $stmt = static::$db->prepare('SELECT COUNT(*) FROM exp_channel_titles WHERE channel_id = 4');
             $stmt->execute();
             $result = $stmt->fetchColumn();
 
@@ -221,7 +220,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('SELECT COUNT(*) FROM exp_channel_data WHERE channel_id = 4');
+            $stmt = static::$db->prepare('SELECT COUNT(*) FROM exp_channel_data WHERE channel_id = 4');
             $stmt->execute();
             $result = $stmt->fetchColumn();
 
@@ -252,7 +251,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('SELECT COUNT(*) FROM temp_channel_titles');
+            $stmt = static::$db->prepare('SELECT COUNT(*) FROM temp_channel_titles');
             $stmt->execute();
             $result = $stmt->fetchColumn();
 
@@ -283,7 +282,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('SELECT COUNT(*) FROM temp_channel_data');
+            $stmt = static::$db->prepare('SELECT COUNT(*) FROM temp_channel_data');
             $stmt->execute();
             $result = $stmt->fetchColumn();
 
@@ -315,7 +314,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('INSERT INTO temp_csv (patient_number, patient_lastname, patient_firstname, patient_street,
+            $stmt = static::$db->prepare('INSERT INTO temp_csv (patient_number, patient_lastname, patient_firstname, patient_street,
 														patient_address2, patient_city, patient_state, patient_zip, patient_phone,
 														patient_phone2, patient_phone3, patient_email)
 
@@ -361,7 +360,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('INSERT INTO exp_channel_titles (site_id, channel_id, author_id, title, url_title, status,
+            $stmt = static::$db->prepare('INSERT INTO exp_channel_titles (site_id, channel_id, author_id, title, url_title, status,
 																versioning_enabled, allow_comments, entry_date, year, month, day)
 
 																VALUES (:site_id, :channel_id, :author_id, :title, :url_title, :status,
@@ -405,7 +404,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('INSERT INTO exp_channel_data (entry_id, site_id, channel_id, field_id_8, field_id_162, field_ft_162, field_id_163,
+            $stmt = static::$db->prepare('INSERT INTO exp_channel_data (entry_id, site_id, channel_id, field_id_8, field_id_162, field_ft_162, field_id_163,
 																field_ft_163, field_id_164, field_ft_164, field_id_165, field_ft_165,
 																field_id_166, field_ft_166, field_id_167, field_ft_167, field_id_168,
 																field_ft_168, field_id_169, field_ft_169, field_id_170, field_ft_170,
@@ -471,7 +470,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('SELECT @last_id := MAX(entry_id) FROM exp_channel_titles; SELECT entry_id FROM exp_channel_titles WHERE entry_id = @last_id;');
+            $stmt = static::$db->prepare('SELECT @last_id := MAX(entry_id) FROM exp_channel_titles; SELECT entry_id FROM exp_channel_titles WHERE entry_id = @last_id;');
             $stmt->execute();
             $result = $stmt->fetchColumn();
 
@@ -502,7 +501,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('SELECT COUNT(*) FROM exp_channel_titles WHERE channel_id = 4');
+            $stmt = static::$db->prepare('SELECT COUNT(*) FROM exp_channel_titles WHERE channel_id = 4');
             $stmt->execute();
             $result = $stmt->fetchColumn();
 
@@ -533,9 +532,9 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('UPDATE `exp_channels`
-									SET `total_entries` = (SELECT COUNT(*) FROM exp_channel_data WHERE channel_id = 4)
-									WHERE `channel_id` = 4');
+            $stmt = static::$db->prepare('UPDATE exp_channels
+									SET total_entries = (SELECT COUNT(*) FROM exp_channel_data WHERE channel_id = 4)
+									WHERE channel_id = 4');
 
             $stmt->execute();
 
@@ -561,7 +560,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('SELECT cd.entry_id FROM exp_channel_data cd 
+            $stmt = static::$db->prepare('SELECT cd.entry_id FROM exp_channel_data cd 
                                     INNER JOIN exp_channel_titles AS ct ON ct.entry_id = cd.entry_id
                                     WHERE ct.status = :order_status AND cd.channel_id = 2');
             $stmt->execute(array(
@@ -595,7 +594,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('SELECT
+            $stmt = static::$db->prepare('SELECT
                                     cd.field_id_58 AS order_date_scanned,
                                     cd.field_id_53 AS order_date_of_pt,
                                     cd.field_id_161 AS order_date_shipped,
@@ -966,7 +965,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('SELECT * FROM exp_matrix_data WHERE entry_id = :entry_id AND field_id = :field_id');
+            $stmt = static::$db->prepare('SELECT * FROM exp_matrix_data WHERE entry_id = :entry_id AND field_id = :field_id');
             $stmt->execute(array(
                 ':entry_id' => $data['entry_id'],
                 ':field_id' => $data['field_id']
@@ -999,7 +998,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('SELECT
+            $stmt = static::$db->prepare('SELECT
                                                 title,
                                                 url_title,
                                                 status,
@@ -1040,7 +1039,7 @@ class Models
         try
         {
 
-            $stmt = static ::$db->prepare('SELECT
+            $stmt = static::$db->prepare('SELECT
                                                 username AS author_data_username,
                                                 member_id AS author_data_member_id,
                                                 screen_name AS author_data_screen_name,
@@ -1059,6 +1058,34 @@ class Models
             {
                 return $result;
             }
+
+        }
+        catch(PDOException $exception)
+        {
+            error_log($exception->getMessage());
+        }
+    }
+
+
+
+
+    /**
+    * updateAcceptedOrder - Updates all orders that have a status of 'Accepted' to 'Accepted-Exported'
+    *
+    * @return nothing
+    */
+
+    public function updateAcceptedOrder()
+    {
+
+        try
+        {
+
+            $stmt = static::$db->prepare('UPDATE exp_channel_titles
+									SET status =  "Accepted-Exported"
+									WHERE channel_id = 2 AND status = "Accepted"');
+
+            $stmt->execute();
 
         }
         catch(PDOException $exception)

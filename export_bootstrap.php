@@ -11,24 +11,17 @@ use Immerge\Importer\Export as Export;
 /**
  * Order Exporter For Richey Lab
  * 
- * Description: This will import a listing of patients for Richey Lab. This is currently
- *              set up as a cron job that runs nightly. First, it will scrub the database
- *              of the previous day's patients and then will import new ones. The client has
- *              FTP access and will upload new .csv files every day. These files will be inside
- *              a folder that is named after the practice ID or 'shipping code'. Each of these
- *              folders reside in the 'crons' folder inside the root HTML folder.
- * 
- *              The client will make use of this through the frontend of the Richey Lab site.
- *              When you create a new order you will notice a drop down select field at the top
- *              of the "Patient Information" section. It will say, "Select a Patient ...". This
- *              drop down will be populated with the appropriate patients for that practice
- *              that were from this import.
+ * Description: This will first update all of the orders that have a status of 'Accepted' and then
+ *              updated them to 'Accepted-Exported' After that it will create and download an Excel
+ *              file that consists of all of their orders that has a status of 'Accepted-Exported'.
+ *              This file gets called from the exporter which can be found at /exporter. The columns
+ *              are set up in a specific order at the request of Richey Lab.
  *
  * @author Joey Leger
  * @author Immerge 2019
  */
 
-$run = new Export('Shipped');
+$run = new Export('Accepted-Exported', true);
 $run->main();
 
 ?>

@@ -20,14 +20,16 @@ use Immerge\Importer\Models as Models;
 class Export
 {
 
-    private static $model;
-    private static $sql_data;
-    private static $spreadsheet;
+    private $model;
+    private $sql_data;
+    private $spreadsheet;
+    private $order_status;
 
-    public function __construct()
+    public function __construct($status)
     {
         static ::$model = Models::getInstance();
         static ::$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        static ::$order_status = $status;
     }
 
 
@@ -90,7 +92,7 @@ class Export
 
     public function buildEachRow()
     {
-        $orders = static ::$model->getAllOpenOrders();
+        $orders = static ::$model->getAllOrders(static ::$order_status);
 
         // Start on the second row of the spreadsheet
         $i = 2;
@@ -102,16 +104,58 @@ class Export
             $results = array_shift($results);
 
             // Get the title data
+            $titles = static ::$model->getChannelTitleDataForExport($order_id);
+            $titles = array_shift($titles);
+
+            // Get member data
+            $members = static ::$model->getMemberDataForExport($titles['author_id']);
+            $members = array_shift($members);
+
             // Get each of the matrix data
+            $mx1 = static ::$model->getMatrixColumns($mx1Data = ['entry_id' => $order_id, 'field_id' => '68']);
+            $mx1 = array_shift($mx1);
+
+            $mx2 = static ::$model->getMatrixColumns($mx2Data = ['entry_id' => $order_id, 'field_id' => '69']);
+            $mx2 = array_shift($mx2);
+
+            $mx3 = static ::$model->getMatrixColumns($mx3Data = ['entry_id' => $order_id, 'field_id' => '70']);
+            $mx3 = array_shift($mx3);
+
+            $mx4 = static ::$model->getMatrixColumns($mx4Data = ['entry_id' => $order_id, 'field_id' => '85']);
+            $mx4 = array_shift($mx4);
+
+            $mx5 = static ::$model->getMatrixColumns($mx5Data = ['entry_id' => $order_id, 'field_id' => '86']);
+            $mx5 = array_shift($mx5);
+
+            $mx6 = static ::$model->getMatrixColumns($mx6Data = ['entry_id' => $order_id, 'field_id' => '87']);
+            $mx6 = array_shift($mx6);
+
+            $mx7 = static ::$model->getMatrixColumns($mx7Data = ['entry_id' => $order_id, 'field_id' => '102']);
+            $mx7 = array_shift($mx7);
+
+            $mx8 = static ::$model->getMatrixColumns($mx8Data = ['entry_id' => $order_id, 'field_id' => '103']);
+            $mx8 = array_shift($mx8);
+
+            $mx9 = static ::$model->getMatrixColumns($mx9Data = ['entry_id' => $order_id, 'field_id' => '104']);
+            $mx9 = array_shift($mx9);
+
+            $mx10 = static ::$model->getMatrixColumns($mx10Data = ['entry_id' => $order_id, 'field_id' => '119']);
+            $mx10 = array_shift($mx10);
+
+            $mx11 = static ::$model->getMatrixColumns($mx11Data = ['entry_id' => $order_id, 'field_id' => '120']);
+            $mx11 = array_shift($mx11);
+
+            $mx12 = static ::$model->getMatrixColumns($mx12Data = ['entry_id' => $order_id, 'field_id' => '121']);
+            $mx12 = array_shift($mx12);
 
             $new_row = [
-                'title' => 'title',
-                'url_title' => 'url_title',
-                'status' => 'status',
-                'entry_date' => 'entry_date',
+                'title' => $titles['title'],
+                'url_title' => $titles['url_title'],
+                'status' => $titles['status'],
+                'entry_date' => $titles['entry_date'],
                 'entry_id' => $order_id,
-                'site_id' => 'site_id',
-                'channel_id' => 'channel_id',
+                'site_id' => $titles['site_id'],
+                'channel_id' => $titles['channel_id'],
                 'order_date_scanned' => $results['order_date_scanned'],
                 'order_date_of_pt' => $results['order_date_of_pt'],
                 'order_date_shipped' => $results['order_date_shipped'],
@@ -122,15 +166,15 @@ class Export
                 'order_ship_date_d3' => $results['order_ship_date_d3'],
                 'order_ship_date_d4' => $results['order_ship_date_d4'],
                 'order_date_submitted' => $results['order_date_submitted'],
-                'author_id' => 'author_id',
-                'author_data_username' => 'author_data_username',
-                'author_data_member_id' => 'author_data_member_id',
-                'author_data_screen_name' => 'author_data_screen_name',
-                'author_data_email' => 'author_data_email',
-                'author_data_join_date' => 'author_data_join_date',
-                'author_data_last_visit' => 'author_data_last_visit',
-                'author_data_group_id' => 'author_data_group_id',
-                'author_data_in_authorlist' => 'author_data_in_authorlist',
+                'author_id' => $titles['author_id'],
+                'author_data_username' => $members['author_data_username'],
+                'author_data_member_id' => $members['author_data_member_id'],
+                'author_data_screen_name' => $members['author_data_screen_name'],
+                'author_data_email' => $members['author_data_email'],
+                'author_data_join_date' => $members['author_data_join_date'],
+                'author_data_last_visit' => $members['author_data_last_visit'],
+                'author_data_group_id' => $members['author_data_group_id'],
+                'author_data_in_authorlist' => $members['author_data_in_authorlist'],
                 'order_practice_name' => $results['order_practice_name'],
                 'order_practice_address' => $results['order_practice_address'],
                 'order_practice_phone' => $results['order_practice_phone'],
@@ -189,14 +233,14 @@ class Export
                 'order_shell_grind_width_d1' => $results['order_shell_grind_width_d1'],
                 'order_shell_arch_fill_d1' => $results['order_shell_arch_fill_d1'],
                 'order_heel_cup_in_shell_d1' => $results['order_heel_cup_in_shell_d1'],
-                'order_forefoot_posting_d1_fpd1_additional' => 'order_forefoot_posting_d1_fpd1_additional',
-                'order_forefoot_posting_d1_fpd1_left' => 'order_forefoot_posting_d1_fpd1_left',
-                'order_forefoot_posting_d1_fpd1_right' => 'order_forefoot_posting_d1_fpd1_right',
-                'order_rearfoot_posting_d1_rpd1_additional' => 'order_rearfoot_posting_d1_rpd1_additional',
-                'order_rearfoot_posting_d1_rpd1_left' => 'order_rearfoot_posting_d1_rpd1_left',
-                'order_rearfoot_posting_d1_rpd1_right' => 'order_rearfoot_posting_d1_rpd1_right',
-                'order_motion_on_vp_d1_mvpd1_left' => 'order_motion_on_vp_d1_mvpd1_left',
-                'order_motion_on_vp_d1_mvpd1_right' => 'order_motion_on_vp_d1_mvpd1_right',
+                'order_forefoot_posting_d1_fpd1_additional' => $mx1['col_id_4'],
+                'order_forefoot_posting_d1_fpd1_left' => $mx1['col_id_5'],
+                'order_forefoot_posting_d1_fpd1_right' => $mx1['col_id_6'],
+                'order_rearfoot_posting_d1_rpd1_additional' => $mx2['col_id_7'],
+                'order_rearfoot_posting_d1_rpd1_left' => $mx2['col_id_8'],
+                'order_rearfoot_posting_d1_rpd1_right' => $mx2['col_id_9'],
+                'order_motion_on_vp_d1_mvpd1_left' => $mx3['col_id_10'],
+                'order_motion_on_vp_d1_mvpd1_right' => $mx3['col_id_11'],
                 'order_met_pad_bar_d1' => $results['order_met_pad_bar_d1'],
                 'order_met_unloads_in_ppt_d1_1' => $results['order_met_unloads_in_ppt_d1_1'],
                 'order_met_unloads_in_ppt_d1_2' => $results['order_met_unloads_in_ppt_d1_2'],
@@ -260,14 +304,14 @@ class Export
                 'order_shell_grind_width_d2' => $results['order_shell_grind_width_d2'],
                 'order_shell_arch_fill_d2' => $results['order_shell_arch_fill_d2'],
                 'order_heel_cup_in_shell_d2' => $results['order_heel_cup_in_shell_d2'],
-                'order_forefoot_posting_d2_fpd2_additional' => 'order_forefoot_posting_d2_fpd2_additional',
-                'order_forefoot_posting_d2_fpd2_left' => 'order_forefoot_posting_d2_fpd2_left',
-                'order_forefoot_posting_d2_fpd2_right' => 'order_forefoot_posting_d2_fpd2_right',
-                'order_rearfoot_posting_d2_rpd2_additional' => 'order_rearfoot_posting_d2_rpd2_additional',
-                'order_rearfoot_posting_d2_rpd2_left' => 'order_rearfoot_posting_d2_rpd2_left',
-                'order_rearfoot_posting_d2_rpd2_right' => 'order_rearfoot_posting_d2_rpd2_right',
-                'order_motion_on_vp_d2_mvpd2_left' => 'order_motion_on_vp_d2_mvpd2_left',
-                'order_motion_on_vp_d2_mvpd2_right' => 'order_motion_on_vp_d2_mvpd2_right',
+                'order_forefoot_posting_d2_fpd2_additional' => $mx4['col_id_24'],
+                'order_forefoot_posting_d2_fpd2_left' => $mx4['col_id_25'],
+                'order_forefoot_posting_d2_fpd2_right' => $mx4['col_id_26'],
+                'order_rearfoot_posting_d2_rpd2_additional' => $mx5['col_id_27'],
+                'order_rearfoot_posting_d2_rpd2_left' => $mx5['col_id_28'],
+                'order_rearfoot_posting_d2_rpd2_right' => $mx5['col_id_29'],
+                'order_motion_on_vp_d2_mvpd2_left' => $mx6['col_id_30'],
+                'order_motion_on_vp_d2_mvpd2_right' => $mx6['col_id_31'],
                 'order_met_pad_bar_d2' => $results['order_met_pad_bar_d2'],
                 'order_met_unloads_in_ppt_d2_1' => $results['order_met_unloads_in_ppt_d2_1'],
                 'order_met_unloads_in_ppt_d2_2' => $results['order_met_unloads_in_ppt_d2_2'],
@@ -331,14 +375,14 @@ class Export
                 'order_shell_grind_width_d3' => $results['order_shell_grind_width_d3'],
                 'order_shell_arch_fill_d3' => $results['order_shell_arch_fill_d3'],
                 'order_heel_cup_in_shell_d3' => $results['order_heel_cup_in_shell_d3'],
-                'order_forefoot_posting_d3_fpd3_additional' => 'order_forefoot_posting_d3_fpd3_additional',
-                'order_forefoot_posting_d3_fpd3_left' => 'order_forefoot_posting_d3_fpd3_left',
-                'order_forefoot_posting_d3_fpd3_right' => 'order_forefoot_posting_d3_fpd3_right',
-                'order_rearfoot_posting_d3_rpd3_additional' => 'order_rearfoot_posting_d3_rpd3_additional',
-                'order_rearfoot_posting_d3_rpd3_left' => 'order_rearfoot_posting_d3_rpd3_left',
-                'order_rearfoot_posting_d3_rpd3_right' => 'order_rearfoot_posting_d3_rpd3_right',
-                'order_motion_on_vp_d3_mvpd3_left' => 'order_motion_on_vp_d3_mvpd3_left',
-                'order_motion_on_vp_d3_mvpd3_right' => 'order_motion_on_vp_d3_mvpd3_right',
+                'order_forefoot_posting_d3_fpd3_additional' => $mx7['col_id_44'],
+                'order_forefoot_posting_d3_fpd3_left' => $mx7['col_id_45'],
+                'order_forefoot_posting_d3_fpd3_right' => $mx7['col_id_46'],
+                'order_rearfoot_posting_d3_rpd3_additional' => $mx8['col_id_48'],
+                'order_rearfoot_posting_d3_rpd3_left' => $mx8['col_id_49'],
+                'order_rearfoot_posting_d3_rpd3_right' => $mx8['col_id_50'],
+                'order_motion_on_vp_d3_mvpd3_left' => $mx9['col_id_50'],
+                'order_motion_on_vp_d3_mvpd3_right' => $mx9['col_id_51'],
                 'order_met_pad_bar_d3' => $results['order_met_pad_bar_d3'],
                 'order_met_unloads_in_ppt_d3_1' => $results['order_met_unloads_in_ppt_d3_1'],
                 'order_met_unloads_in_ppt_d3_2' => $results['order_met_unloads_in_ppt_d3_2'],
@@ -402,14 +446,14 @@ class Export
                 'order_shell_grind_width_d4' => $results['order_shell_grind_width_d4'],
                 'order_shell_arch_fill_d4' => $results['order_shell_arch_fill_d4'],
                 'order_heel_cup_in_shell_d4' => $results['order_heel_cup_in_shell_d4'],
-                'order_forefoot_posting_d4_fpd4_additional' => 'order_forefoot_posting_d4_fpd4_additional',
-                'order_forefoot_posting_d4_fpd4_left' => 'order_forefoot_posting_d4_fpd4_left',
-                'order_forefoot_posting_d4_fpd4_right' => 'order_forefoot_posting_d4_fpd4_right',
-                'order_rearfoot_posting_d4_rpd4_additional' => 'order_rearfoot_posting_d4_rpd4_additional',
-                'order_rearfoot_posting_d4_rpd4_left' => 'order_rearfoot_posting_d4_rpd4_left',
-                'order_rearfoot_posting_d4_rpd4_right' => 'order_rearfoot_posting_d4_rpd4_right',
-                'order_motion_on_vp_d4_mvpd4_left' => 'order_motion_on_vp_d4_mvpd4_left',
-                'order_motion_on_vp_d4_mvpd4_right' => 'order_motion_on_vp_d4_mvpd4_right',
+                'order_forefoot_posting_d4_fpd4_additional' => $mx10['col_id_64'],
+                'order_forefoot_posting_d4_fpd4_left' => $mx10['col_id_65'],
+                'order_forefoot_posting_d4_fpd4_right' => $mx10['col_id_66'],
+                'order_rearfoot_posting_d4_rpd4_additional' => $mx11['col_id_68'],
+                'order_rearfoot_posting_d4_rpd4_left' => $mx11['col_id_69'],
+                'order_rearfoot_posting_d4_rpd4_right' => $mx11['col_id_70'],
+                'order_motion_on_vp_d4_mvpd4_left' => $mx12['col_id_70'],
+                'order_motion_on_vp_d4_mvpd4_right' => $mx12['col_id_71'],
                 'order_met_pad_bar_d4' => $results['order_met_pad_bar_d4'],
                 'order_met_unloads_in_ppt_d4_1' => $results['order_met_unloads_in_ppt_d4_1'],
                 'order_met_unloads_in_ppt_d4_2' => $results['order_met_unloads_in_ppt_d4_2'],

@@ -28,7 +28,7 @@ use Immerge\Importer\Export as Export;
  * @author Immerge 2019
  */
 
-$run = new Export();
+$run = new Export('Shipped');
 $run->main();
 
 ?>

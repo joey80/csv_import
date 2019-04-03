@@ -25,9 +25,7 @@ class Import
 
     public function __construct()
     {
-    }
-    private function __clone()
-    {
+        static ::$model = Models::getInstance();
     }
 
 
@@ -162,8 +160,6 @@ class Import
 
     public function main()
     {
-
-        static ::$model = Models::getInstance();
 
         // Delete all existing patients from the DB
         static ::$model->deleteOldAppointments();

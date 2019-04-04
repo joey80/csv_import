@@ -47,7 +47,7 @@ class Export
 
     public function main()
     {
-        if ($this->change != NULL ? static::$model->updateAcceptedOrder() : '');
+        if ($this->change != NULL ? static::$model->updateAcceptedOrder() : NULL);
         $this->buildTheSpreadSheet();
         $this->downloadTheSpreadsheet($this->spreadsheet);
     }
@@ -63,9 +63,14 @@ class Export
 
     public function downloadTheSpreadsheet($sheet)
     {
+        // Name the file
+        if ($this->order_status != NULL ? $name = $this->order_status : $name = 'export');
+        $file_name = $name . '_' . date("Y-m-d");
+
+        // Write the file and download it
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($sheet);
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="export.xlsx"');
+        header('Content-Disposition: attachment; filename="' . $file_name . '.xlsx"');
         $writer->save("php://output");
         
     }
@@ -104,54 +109,24 @@ class Export
 
         foreach ($orders as $order_id)
         {
-            // Get all of the channel data
+            // Get all of the data
             $results = static::$model->getAllOrderDetails($order_id);
-            $results = array_shift($results);
-
-            // Get the title data
             $titles = static::$model->getChannelTitleDataForExport($order_id);
-            $titles = array_shift($titles);
-
-            // Get member data
             $members = static::$model->getMemberDataForExport($titles['author_id']);
-            $members = array_shift($members);
 
-            // Get each of the matrix data
+            // Get each of the matrix data from the order field group
             $mx1 = static::$model->getMatrixColumns($mx1Data = ['entry_id' => $order_id, 'field_id' => '68']);
-            $mx1 = array_shift($mx1);
-            
             $mx2 = static::$model->getMatrixColumns($mx2Data = ['entry_id' => $order_id, 'field_id' => '69']);
-            $mx2 = array_shift($mx2);
-
             $mx3 = static::$model->getMatrixColumns($mx3Data = ['entry_id' => $order_id, 'field_id' => '70']);
-            $mx3 = array_shift($mx3);
-
             $mx4 = static::$model->getMatrixColumns($mx4Data = ['entry_id' => $order_id, 'field_id' => '85']);
-            $mx4 = array_shift($mx4);
-
             $mx5 = static::$model->getMatrixColumns($mx5Data = ['entry_id' => $order_id, 'field_id' => '86']);
-            $mx5 = array_shift($mx5);
-
             $mx6 = static::$model->getMatrixColumns($mx6Data = ['entry_id' => $order_id, 'field_id' => '87']);
-            $mx6 = array_shift($mx6);
-
             $mx7 = static::$model->getMatrixColumns($mx7Data = ['entry_id' => $order_id, 'field_id' => '102']);
-            $mx7 = array_shift($mx7);
-
             $mx8 = static::$model->getMatrixColumns($mx8Data = ['entry_id' => $order_id, 'field_id' => '103']);
-            $mx8 = array_shift($mx8);
-
             $mx9 = static::$model->getMatrixColumns($mx9Data = ['entry_id' => $order_id, 'field_id' => '104']);
-            $mx9 = array_shift($mx9);
-
             $mx10 = static::$model->getMatrixColumns($mx10Data = ['entry_id' => $order_id, 'field_id' => '119']);
-            $mx10 = array_shift($mx10);
-
             $mx11 = static::$model->getMatrixColumns($mx11Data = ['entry_id' => $order_id, 'field_id' => '120']);
-            $mx11 = array_shift($mx11);
-
             $mx12 = static::$model->getMatrixColumns($mx12Data = ['entry_id' => $order_id, 'field_id' => '121']);
-            $mx12 = array_shift($mx12);
 
             $new_row = [
                 'title' => $titles['title'],

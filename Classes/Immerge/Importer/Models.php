@@ -521,7 +521,7 @@ class Models
 
 
     /**
-    * channelsUpdateSql - Updates the exp_channel number of entries for the patient's channel
+    * channelsUpdateSql - Updates the exp_channel table's number of entries for the patient's channel
     *
     * @return nothing
     */
@@ -549,9 +549,9 @@ class Models
 
 
     /**
-    * getAllOpenOrders - Returns all of the orders that have a status of Open 
+    * getAllOrders - Returns all of the orders that matches the status passed in
     *
-    * @return $result - An array of all entry_id's from open orders
+    * @return $result - An array of all entry_id's from orders
     */
 
     public function getAllOrders($data)
@@ -583,9 +583,9 @@ class Models
 
 
     /**
-    * getAllOrderDetails - Returns all of the orders that have a status of Open 
+    * getAllOrderDetails - Returns all order data from a specified entry_id
     *
-    * @return $result - An array of all entry_id's from open orders
+    * @return $result - An array of order data
     */
 
     public function getAllOrderDetails($data)
@@ -941,7 +941,7 @@ class Models
 
             if ($result !== false)
             {
-                return $result;
+                return array_shift($result);
             }
 
         }
@@ -974,7 +974,7 @@ class Models
 
             if ($result !== false)
             {
-                return $result;
+                return array_shift($result);
             }
 
         }
@@ -1014,7 +1014,7 @@ class Models
 
             if ($result !== false)
             {
-                return $result;
+                return array_shift($result);
             }
 
         }
@@ -1056,7 +1056,7 @@ class Models
 
             if ($result !== false)
             {
-                return $result;
+                return array_shift($result);
             }
 
         }

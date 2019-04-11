@@ -230,7 +230,7 @@ class Import
 
                     // Iterate through each row of the .csv - Starting with the second row to exclude the header
                     // NOTE: spreadsheet rows start with 1
-                    for ($i = 2;$i <= $highestRow;$i++)
+                    for ($i = 2; $i <= $highestRow; $i++)
                     {
 
                         // Get each row from the .csv and return it as an array - We need columns A through L

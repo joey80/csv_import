@@ -9,6 +9,7 @@ spl_autoload_register(function ($className)
 
 require '/var/www/html/scripts/vendor/autoload.php';
 use Immerge\Importer\Models as Models;
+use Immerge\Importer\Logger as Logger;
 
 /**
  * Export - Exporter For Richey Lab
@@ -25,6 +26,7 @@ class Export
     public $spreadsheet;
     public $order_status;
     public $change;
+    public $log;
 
     // We need the order status and if we need to change
     // the orders from 'Accepted' to 'Accepted-Exported'
@@ -33,6 +35,7 @@ class Export
         $this->order_status = $status;
         static::$model = Models::getInstance();
         $this->spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $this->log = new Logger('percent_done.txt');
         if ($change != NULL ? $this->change = $change : $this->change = NULL);
     }
 
@@ -40,7 +43,11 @@ class Export
 
 
     /**
-    * main - The main controller for the exporter. 
+    * main - The main controller for the exporter.
+    *        1. If the change parameter was passed in with the constructor, update the accepted orders
+    *        2. Build the spreadsheet
+    *        3. Download the spreadsheet
+    *        4. Clear the log file that is used on the frontend UI to update the download progress
     *
     * @return nothing
     */
@@ -50,6 +57,9 @@ class Export
         if ($this->change != NULL ? static::$model->updateAcceptedOrder() : NULL);
         $this->buildTheSpreadSheet();
         $this->downloadTheSpreadsheet($this->spreadsheet);
+
+        // Clear the log
+        $this->log->write(0);
     }
 
 
@@ -104,7 +114,11 @@ class Export
     {
         $orders = static::$model->getAllOrders($this->order_status);
 
-        // Start on the second row of the spreadsheet
+        // Count the total orders for calculating the percentage completed for the logger
+        $total_order = count($orders);
+        $percent_completed_per_row = 100 / $total_order;
+
+        // Start on the second row of the spreadsheet. We don't want to overwrite the header
         $i = 2;
 
         foreach ($orders as $order_id)
@@ -516,6 +530,11 @@ class Export
             ];
             
             $this->spreadsheet->getActiveSheet()->fromArray($new_row, NULL, 'A' . $i);
+
+            // Log the percent loaded
+            $percent_loaded = round($percent_completed_per_row * $i);
+            $this->log->write($percent_loaded);
+
             $i++;
         }
     }

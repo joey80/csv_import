@@ -55,6 +55,8 @@ Thumbs.db
 
 # junk project files
 config.php
+export_bootstrap_accepted-exported.php
+export_bootstrap_accepted.php
 
 # -------------------------
 # BEGIN Whitelisted Files

@@ -54,11 +54,14 @@ class Export
 
     public function main()
     {
+
         if ($this->change != NULL ? static::$model->updateAcceptedOrder() : NULL);
         $this->buildTheSpreadSheet();
         $this->downloadTheSpreadsheet($this->spreadsheet);
+        $this->log->write(100);
 
         // Clear the log
+        sleep(2);
         $this->log->write(0);
     }
 
@@ -73,6 +76,7 @@ class Export
 
     public function downloadTheSpreadsheet($sheet)
     {
+
         // Name the file
         if ($this->order_status != NULL ? $name = $this->order_status : $name = 'export');
         $file_name = $name . '_' . date("Y-m-d");
@@ -82,7 +86,6 @@ class Export
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="' . $file_name . '.xlsx"');
         $writer->save("php://output");
-        
     }
 
 
@@ -116,7 +119,7 @@ class Export
 
         // Count the total orders for calculating the percentage completed for the logger
         $total_order = count($orders);
-        $percent_completed_per_row = 100 / $total_order;
+        $percent_completed_per_row = 80 / $total_order;
 
         // Start on the second row of the spreadsheet. We don't want to overwrite the header
         $i = 2;
@@ -532,7 +535,7 @@ class Export
             $this->spreadsheet->getActiveSheet()->fromArray($new_row, NULL, 'A' . $i);
 
             // Log the percent loaded
-            $percent_loaded = round($percent_completed_per_row * $i);
+            $percent_loaded = $percent_completed_per_row * $i;
             $this->log->write($percent_loaded);
 
             $i++;

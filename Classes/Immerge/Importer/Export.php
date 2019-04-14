@@ -9,6 +9,7 @@ spl_autoload_register(function ($className)
 
 require '/var/www/html/scripts/vendor/autoload.php';
 use Immerge\Importer\Models as Models;
+use Immerge\Importer\Logger as Logger;
 use Box\Spout\Writer\WriterFactory;
 use Box\Spout\Common\Type;
 
@@ -27,6 +28,7 @@ class Export
     public $writer;
     public $order_status;
     public $change;
+    public $log;
 
     // We need the order status and if we need to change
     // the orders from 'Accepted' to 'Accepted-Exported'
@@ -35,6 +37,7 @@ class Export
         $this->order_status = $status;
         static::$model = Models::getInstance();
         $this->writer = WriterFactory::create(Type::CSV);
+        $this->log = new Logger('export');
         if ($change != NULL ? $this->change = $change : $this->change = NULL);
     }
 
@@ -53,7 +56,6 @@ class Export
 
     public function main()
     {
-
         if ($this->change != NULL ? static::$model->updateAcceptedOrder() : NULL);
         $this->openTheSpreadsheet();
         $this->buildTheSpreadSheet();
@@ -523,6 +525,8 @@ class Export
             // Add the data to a new row in the spreadsheet
             $this->writer->addRow($new_row);
         }
+
+        $this->log->write('completed');
     }
 
 }

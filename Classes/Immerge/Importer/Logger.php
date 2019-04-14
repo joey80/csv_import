@@ -20,11 +20,14 @@ class Logger
 {
 
     public $file;
+    public $path;
 
-    public function __construct($filename)
+    public function __construct($filename, $path = null)
     {
 
-        $this->file = $filename;
+        $this->file = $filename . '.log';
+        if ($path == null ? $this->path = '/var/www/logs/' : $this->path = $path);
+        $this->deleteLog();
     }
 
 
@@ -39,7 +42,8 @@ class Logger
 
     public function write($message)
     {
-        file_put_contents($this->file, $message);
+
+        file_put_contents($this->path . $this->file, trim($message).PHP_EOL, FILE_APPEND);
     }
 
 
@@ -57,5 +61,24 @@ class Logger
 
         $content = file_get_contents($this->file);
         return $content;
+    }
+
+
+
+
+    /**
+     * deleteLog - Deletes the log file if already exists
+     *
+     * @param none
+     * @return nothing
+     */
+
+    public function deleteLog()
+    {
+
+        if (file_exists($this->path . $this->file))
+        {
+            unlink($this->path . $this->file);
+        }
     }
 }

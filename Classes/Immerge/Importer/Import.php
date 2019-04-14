@@ -9,6 +9,7 @@ spl_autoload_register(function ($className)
 
 require '/var/www/html/scripts/vendor/autoload.php';
 use Immerge\Importer\Models as Models;
+use Immerge\Importer\Logger as Logger;
 
 /**
  * Import - Importer For Richey Lab
@@ -22,10 +23,174 @@ class Import
 
     public static $model;
     public $sql_data;
+    public $log;
 
     public function __construct()
     {
         static::$model = Models::getInstance();
+        $this->log = new Logger('import_patients');
+    }
+
+
+
+
+    /**
+     * main - The main controller for the Importer. It reads through .csv's that are nested
+     *        inside folders that reside in the cron folder. It goes through them one by one
+     *        in a loop, reads each line and then adds that data to the database.
+     *
+     * @return nothing
+     */
+
+    public function main()
+    {
+        // Log the start of the importer
+        $this->log->write('Starting The Patient Importer. Date: ' . date("Y-m-d H:i:s"));
+        $this->log->write('################################################');
+        $this->log->write(' ');
+
+        // Delete all existing patients from the DB
+        static::$model->deleteOldAppointments();
+
+        // Read through the subfolders inside the cron folder
+        $root_path = '/var/www/html/crons/';
+        $scanned_folders = array_diff(scandir($root_path) , array('..', '.'));
+
+        // Scan the files that are inside each of the subfolders inside of the cron folder
+        foreach ($scanned_folders as $folder)
+        {
+            $scanned_file = array_diff(scandir($root_path . '/' . $folder) , array('..', '.'));
+
+            // Get the file information
+            $theFile = pathinfo($scanned_file[2]);
+            $theFile_name = $theFile['basename'];
+            $theFile_ext = strtolower($theFile['extension']);
+
+            // Check to make sure its a .csv file and then process it
+            if ($theFile_ext === 'csv')
+            {
+
+                // Clean up the temp tables
+                static::$model->deleteTempTables();
+                static::$model->createTempTables();
+
+                $this->log->write('Reading ' . $theFile_name);
+
+                $shipping_code = $folder;
+
+                // Load the .csv file with PHPSpreadsheet
+                $input_file = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
+                $spreadsheet = $input_file->load($root_path . $folder . '/' . $theFile_name);
+                $this->log->write('import started for ' . $shipping_code);
+
+                // Get the author id
+                $author_id = static::$model->titleAuthorFind($shipping_code);
+
+                // Check to make sure that both table counts match
+                $titles_initial_count = static::$model->titlesTableCount();
+                $data_initial_count = static::$model->dataTableCount();
+                $temp_titles_count = static::$model->tempTitlesCount();
+                $temp_data_count = static::$model->tempDataCount();
+
+                if (($titles_initial_count === $temp_titles_count) && ($data_initial_count === $temp_data_count))
+                {
+                    $this->log->write('Both tables backed up');
+                }
+                else
+                {
+                    $this->log->write('Import has failed on backup table creation');
+                    return;
+                }
+
+                // Get the total row count from the .csv
+                $highestRow = $spreadsheet->getActiveSheet()
+                    ->getHighestRow();
+
+                // Ignore empty .csv's - (All of them should have at least one header row)
+                if ($highestRow > 1)
+                {
+
+                    $empty_file = false;
+
+                    // Keep track of how many insertions we've done
+                    $titles_insertion_count = 0;
+                    $data_insertion_count = 0;
+
+                    // Iterate through each row of the .csv - Starting with the second row to exclude the header
+                    // NOTE: spreadsheet rows start with 1
+                    for ($i = 2; $i <= $highestRow; $i++)
+                    {
+
+                        // Get each row from the .csv and return it as an array - We need columns A through L
+                        $data_array = $spreadsheet->getActiveSheet()
+                            ->rangeToArray('A' . $i . ':L' . $i, null, true, true, true);
+
+                        // Insert into the temp_csv table
+                        $this->temp_csv_insert($data_array, $i);
+
+                        // Get the date and then start second insert
+                        $date = date("Y-m-d H:i:s");
+                        $entry_date = strtotime($date);
+
+                        // Insert the new record into exp_channel_titles and update the counter
+                        $this->channel_titles_insert($author_id, $entry_date);
+                        $titles_insertion_count++;
+
+                        // Get the auto-encremented entry_id from exp_channel_titles
+                        // We need this in order to make the same entry_id into exp_channel_data
+                        $last_entry = static::$model->getLastEntry();
+
+                        // Insert the new record into exp_channel_data and update the counter
+                        $this->channel_data_insert($last_entry, $author_id);
+                        $data_insertion_count++;
+
+                        // Check to make sure that the count matches what was inserted
+                        $titles_final_count = static::$model->titlesTableCount();
+                        $data_final_count = static::$model->dataTableCount();
+
+                        if (!$titles_final_count === $titles_insertion_count)
+                        {
+                            $this->log->write('Import has failed on new channel titles record insertion');
+                        }
+
+                        if (!$data_final_count === $data_insertion_count)
+                        {
+                            $this->log->write('Import has failed on new channel data record insertion');
+                        }
+                    }
+
+                }
+                else
+                {
+
+                    // Move on if the .csv file is empty
+                    $this->log->write('Skipping this one because its blank');
+                    $empty_file = true;
+                }
+            }
+
+            // End of the current .csv
+            if (!$empty_file)
+            {
+                $this->log->write('import successful for ' . $shipping_code);
+            }
+
+            $this->log->write('---------------------------------');
+        }
+
+        // End of the main method
+
+        // Update the total entries for the Patients channel
+        static::$model->channelsUpdateSql();
+
+        // Clean up the temp tables
+        static::$model->deleteTempTables();
+        $this->log->write('Final cleanup of the temp tables');
+
+        // Log the end of the import
+        $this->log->write(' ');
+        $this->log->write('The Patient Importer Has Completed');
+        $this->log->write('################################################');
     }
 
 
@@ -145,157 +310,6 @@ class Import
 
         // Insert the new record into exp_channel_data and update the counter
         static::$model->dataInsertNewSql($sql_data3);
-    }
-
-
-
-
-    /**
-     * main - The main controller for the Importer. It reads through .csv's that are nested
-     *        inside folders that reside in the cron folder. It goes through them one by one
-     *        in a loop, reads each line and then adds that data to the database.
-     *
-     * @return nothing
-     */
-
-    public function main()
-    {
-
-        // Delete all existing patients from the DB
-        static::$model->deleteOldAppointments();
-
-        // Read through the subfolders inside the cron folder
-        $root_path = '/var/www/html/crons/';
-        $scanned_folders = array_diff(scandir($root_path) , array('..', '.'));
-
-        // Scan the files that are inside each of the subfolders inside of the cron folder
-        foreach ($scanned_folders as $folder)
-        {
-            $scanned_file = array_diff(scandir($root_path . '/' . $folder) , array('..', '.'));
-
-            // Get the file information
-            $theFile = pathinfo($scanned_file[2]);
-            $theFile_name = $theFile['basename'];
-            $theFile_ext = strtolower($theFile['extension']);
-
-            // Check to make sure its a .csv file and then process it
-            if ($theFile_ext === 'csv')
-            {
-
-                // Clean up the temp tables
-                static::$model->deleteTempTables();
-                static::$model->createTempTables();
-
-                echo 'Reading ' . $theFile_name . PHP_EOL;
-
-                $shipping_code = $folder;
-
-                // Load the .csv file with PHPSpreadsheet
-                $input_file = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
-                $spreadsheet = $input_file->load($root_path . $folder . '/' . $theFile_name);
-                echo 'import started for ' . $shipping_code . PHP_EOL;
-
-                // Get the author id
-                $author_id = static::$model->titleAuthorFind($shipping_code);
-
-                // Check to make sure that both table counts match
-                $titles_initial_count = static::$model->titlesTableCount();
-                $data_initial_count = static::$model->dataTableCount();
-                $temp_titles_count = static::$model->tempTitlesCount();
-                $temp_data_count = static::$model->tempDataCount();
-
-                if (($titles_initial_count === $temp_titles_count) && ($data_initial_count === $temp_data_count))
-                {
-                    echo 'Both tables backed up' . PHP_EOL;
-                }
-                else
-                {
-                    echo 'Import has failed on backup table creation' . PHP_EOL;
-                    return;
-                }
-
-                // Get the total row count from the .csv
-                $highestRow = $spreadsheet->getActiveSheet()
-                    ->getHighestRow();
-
-                // Ignore empty .csv's - (All of them should have at least one header row)
-                if ($highestRow > 1)
-                {
-
-                    $empty_file = false;
-
-                    // Keep track of how many insertions we've done
-                    $titles_insertion_count = 0;
-                    $data_insertion_count = 0;
-
-                    // Iterate through each row of the .csv - Starting with the second row to exclude the header
-                    // NOTE: spreadsheet rows start with 1
-                    for ($i = 2; $i <= $highestRow; $i++)
-                    {
-
-                        // Get each row from the .csv and return it as an array - We need columns A through L
-                        $data_array = $spreadsheet->getActiveSheet()
-                            ->rangeToArray('A' . $i . ':L' . $i, null, true, true, true);
-
-                        // Insert into the temp_csv table
-                        $this->temp_csv_insert($data_array, $i);
-
-                        // Get the date and then start second insert
-                        $date = date("Y-m-d H:i:s");
-                        $entry_date = strtotime($date);
-
-                        // Insert the new record into exp_channel_titles and update the counter
-                        $this->channel_titles_insert($author_id, $entry_date);
-                        $titles_insertion_count++;
-
-                        // Get the auto-encremented entry_id from exp_channel_titles
-                        // We need this in order to make the same entry_id into exp_channel_data
-                        $last_entry = static::$model->getLastEntry();
-
-                        // Insert the new record into exp_channel_data and update the counter
-                        $this->channel_data_insert($last_entry, $author_id);
-                        $data_insertion_count++;
-
-                        // Check to make sure that the count matches what was inserted
-                        $titles_final_count = static::$model->titlesTableCount();
-                        $data_final_count = static::$model->dataTableCount();
-
-                        if (!$titles_final_count === $titles_insertion_count)
-                        {
-                            echo 'Import has failed on new channel titles record insertion' . PHP_EOL;
-                        }
-
-                        if (!$data_final_count === $data_insertion_count)
-                        {
-                            echo 'Import has failed on new channel data record insertion' . PHP_EOL;
-                        }
-                    }
-
-                }
-                else
-                {
-
-                    // Move on if the .csv file is empty
-                    echo 'Skipping this one because its blank' . PHP_EOL;
-                    $empty_file = true;
-                }
-            }
-
-            // End of the current .csv
-            if (!$empty_file)
-            {
-                echo 'import successful for ' . $shipping_code . PHP_EOL;
-            }
-
-            echo '---------------------------------' . PHP_EOL;
-        }
-
-        // Update the total entries for the Patients channel
-        static::$model->channelsUpdateSql();
-
-        // Clean up the temp tables
-        static::$model->deleteTempTables();
-        echo 'Final cleanup of the temp tables' . PHP_EOL;
     }
 
 }

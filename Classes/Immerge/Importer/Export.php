@@ -9,7 +9,8 @@ spl_autoload_register(function ($className)
 
 require '/var/www/html/scripts/vendor/autoload.php';
 use Immerge\Importer\Models as Models;
-use Immerge\Importer\Logger as Logger;
+use Box\Spout\Writer\WriterFactory;
+use Box\Spout\Common\Type;
 
 /**
  * Export - Exporter For Richey Lab
@@ -23,10 +24,9 @@ class Export
 
     public static $model;
     public $sql_data;
-    public $spreadsheet;
+    public $writer;
     public $order_status;
     public $change;
-    public $log;
 
     // We need the order status and if we need to change
     // the orders from 'Accepted' to 'Accepted-Exported'
@@ -34,8 +34,7 @@ class Export
     {
         $this->order_status = $status;
         static::$model = Models::getInstance();
-        $this->spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $this->log = new Logger('percent_done.txt');
+        $this->writer = WriterFactory::create(Type::CSV);
         if ($change != NULL ? $this->change = $change : $this->change = NULL);
     }
 
@@ -45,9 +44,9 @@ class Export
     /**
     * main - The main controller for the exporter.
     *        1. If the change parameter was passed in with the constructor, update the accepted orders
-    *        2. Build the spreadsheet
-    *        3. Download the spreadsheet
-    *        4. Clear the log file that is used on the frontend UI to update the download progress
+    *        2. Open the spreadsheet file to start writing to it
+    *        3. Build the spreadsheet
+    *        4. Close the spreadsheet
     *
     * @return nothing
     */
@@ -56,36 +55,29 @@ class Export
     {
 
         if ($this->change != NULL ? static::$model->updateAcceptedOrder() : NULL);
+        $this->openTheSpreadsheet();
         $this->buildTheSpreadSheet();
-        $this->downloadTheSpreadsheet($this->spreadsheet);
-        $this->log->write(100);
-
-        // Clear the log
-        sleep(2);
-        $this->log->write(0);
+        $this->writer->close();
     }
 
 
 
 
     /**
-    * downloadTheSpreadsheet - Downloads the spreadsheet
+    * openTheSpreadsheet - Opens a new spreadsheet to write to
     *
     * @return nothing
     */
 
-    public function downloadTheSpreadsheet($sheet)
+    public function openTheSpreadsheet()
     {
 
         // Name the file
         if ($this->order_status != NULL ? $name = $this->order_status : $name = 'export');
-        $file_name = $name . '_' . date("Y-m-d");
+        $file_name = $name . '_' . date("Y-m-d") . '.csv';
 
-        // Write the file and download it
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($sheet);
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $file_name . '.xlsx"');
-        $writer->save("php://output");
+        // Open the file to begin writing
+        $this->writer->openToBrowser($file_name);
     }
 
 
@@ -100,7 +92,7 @@ class Export
     public function buildTheSpreadSheet()
     {
         $header = static::$model->createExportHeaderRow();
-        $this->spreadsheet->getActiveSheet()->fromArray($header);
+        $this->writer->addRow($header);
         $this->buildEachRow();
     }
 
@@ -117,13 +109,6 @@ class Export
     {
         $orders = static::$model->getAllOrders($this->order_status);
 
-        // Count the total orders for calculating the percentage completed for the logger
-        $total_order = count($orders);
-        $percent_completed_per_row = 80 / $total_order;
-
-        // Start on the second row of the spreadsheet. We don't want to overwrite the header
-        $i = 2;
-
         foreach ($orders as $order_id)
         {
             // Get all of the data
@@ -132,6 +117,9 @@ class Export
             $members = static::$model->getMemberDataForExport($titles['author_id']);
 
             // Get each of the matrix data from the order field group
+
+            // NOTE: This is pretty gross. But due to how maxtrix saves data in the database this
+            // is the best implementation without having to perform 12 table joins for one entry_id. - Joey
             $mx1 = static::$model->getMatrixColumns($mx1Data = ['entry_id' => $order_id, 'field_id' => '68']);
             $mx2 = static::$model->getMatrixColumns($mx2Data = ['entry_id' => $order_id, 'field_id' => '69']);
             $mx3 = static::$model->getMatrixColumns($mx3Data = ['entry_id' => $order_id, 'field_id' => '70']);
@@ -532,13 +520,8 @@ class Export
                 'order_assistant_select' => $results['order_assistant_select']
             ];
             
-            $this->spreadsheet->getActiveSheet()->fromArray($new_row, NULL, 'A' . $i);
-
-            // Log the percent loaded
-            $percent_loaded = $percent_completed_per_row * $i;
-            $this->log->write($percent_loaded);
-
-            $i++;
+            // Add the data to a new row in the spreadsheet
+            $this->writer->addRow($new_row);
         }
     }
 

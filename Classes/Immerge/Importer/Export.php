@@ -41,7 +41,7 @@ class Export
         static::$model = Models::getInstance();
         $this->writer = WriterFactory::create(Type::CSV);
         $this->log = new Logger('export');
-        $this->the_date = (new DateTime('America/New_York'))->format('Y-m-d H:i:s');
+        $this->the_date = (new DateTime('America/New_York'))->format('m-d-Y H:i:s');
         if ($change != NULL ? $this->change = $change : $this->change = NULL);
     }
 
@@ -67,6 +67,7 @@ class Export
         $this->buildTheSpreadSheet();
         $this->writer->close();
         $this->saveTheSettings();
+        $this->log->write('youre the best');
     }
 
 
@@ -82,7 +83,7 @@ class Export
     {
 
         // Name the file
-        if ($this->order_status != NULL ? $name = $this->order_status : $name = 'export');
+        if ($this->order_status != null ? $name = $this->order_status : $name = 'export');
         $file_name = $name . '_' . $this->the_date . '.csv';
 
         // Open the file to begin writing
@@ -547,7 +548,7 @@ class Export
     public function saveTheSettings()
     {
         $settings = array(
-            'report name' => $this->order_status . 'Orders',
+            'report name' => $this->order_status . ' Orders',
             'status' => 'completed',
             'date' => $this->the_date);
 

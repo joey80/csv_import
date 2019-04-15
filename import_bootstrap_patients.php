@@ -32,5 +32,3 @@ use Immerge\Importer\Import as Import;
 
 $run = new Import();
 $run->main();
-
-?>

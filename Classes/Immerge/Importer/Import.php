@@ -10,6 +10,7 @@ spl_autoload_register(function ($className)
 require '/var/www/html/scripts/vendor/autoload.php';
 use Immerge\Importer\Models as Models;
 use Immerge\Importer\Logger as Logger;
+use DateTime;
 
 /**
  * Import - Importer For Richey Lab
@@ -23,12 +24,12 @@ class Import
 
     public static $model;
     public $sql_data;
-    public $log;
+    public $the_date;
 
     public function __construct()
     {
         static::$model = Models::getInstance();
-        $this->log = new Logger('import_patients');
+        $this->the_date = (new DateTime('America/New_York'))->format('m-d-Y H:i:s');
     }
 
 
@@ -45,9 +46,10 @@ class Import
     public function main()
     {
         // Log the start of the importer
-        $this->log->write('Starting The Patient Importer. Date: ' . date("Y-m-d H:i:s"));
-        $this->log->write('################################################');
-        $this->log->write(' ');
+        $patients_log = new Logger('import_patients');
+        $patients_log->write('Starting The Patient Importer. Date: ' . $this->the_date);
+        $patients_log->write('################################################');
+        $patients_log->write(' ');
 
         // Delete all existing patients from the DB
         static::$model->deleteOldAppointments();
@@ -74,14 +76,14 @@ class Import
                 static::$model->deleteTempTables();
                 static::$model->createTempTables();
 
-                $this->log->write('Reading ' . $theFile_name);
+                $patients_log->write('Reading ' . $theFile_name);
 
                 $shipping_code = $folder;
 
                 // Load the .csv file with PHPSpreadsheet
                 $input_file = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
                 $spreadsheet = $input_file->load($root_path . $folder . '/' . $theFile_name);
-                $this->log->write('import started for ' . $shipping_code);
+                $patients_log->write('import started for ' . $shipping_code);
 
                 // Get the author id
                 $author_id = static::$model->titleAuthorFind($shipping_code);
@@ -94,11 +96,11 @@ class Import
 
                 if (($titles_initial_count === $temp_titles_count) && ($data_initial_count === $temp_data_count))
                 {
-                    $this->log->write('Both tables backed up');
+                    $patients_log->write('Both tables backed up');
                 }
                 else
                 {
-                    $this->log->write('Import has failed on backup table creation');
+                    $patients_log->write('Import has failed on backup table creation');
                     return;
                 }
 
@@ -150,12 +152,12 @@ class Import
 
                         if (!$titles_final_count === $titles_insertion_count)
                         {
-                            $this->log->write('Import has failed on new channel titles record insertion');
+                            $patients_log->write('Import has failed on new channel titles record insertion');
                         }
 
                         if (!$data_final_count === $data_insertion_count)
                         {
-                            $this->log->write('Import has failed on new channel data record insertion');
+                            $patients_log->write('Import has failed on new channel data record insertion');
                         }
                     }
 
@@ -164,7 +166,7 @@ class Import
                 {
 
                     // Move on if the .csv file is empty
-                    $this->log->write('Skipping this one because its blank');
+                    $patients_log->write('Skipping this one because its blank');
                     $empty_file = true;
                 }
             }
@@ -172,10 +174,10 @@ class Import
             // End of the current .csv
             if (!$empty_file)
             {
-                $this->log->write('import successful for ' . $shipping_code);
+                $patients_log->write('import successful for ' . $shipping_code);
             }
 
-            $this->log->write('---------------------------------');
+            $patients_log->write('---------------------------------');
         }
 
         // End of the main method
@@ -185,12 +187,12 @@ class Import
 
         // Clean up the temp tables
         static::$model->deleteTempTables();
-        $this->log->write('Final cleanup of the temp tables');
+        $patients_log->write('Final cleanup of the temp tables');
 
         // Log the end of the import
-        $this->log->write(' ');
-        $this->log->write('The Patient Importer Has Completed');
-        $this->log->write('################################################');
+        $patients_log->write(' ');
+        $patients_log->write('The Patient Importer Has Completed');
+        $patients_log->write('################################################');
     }
 
 
@@ -310,6 +312,98 @@ class Import
 
         // Insert the new record into exp_channel_data and update the counter
         static::$model->dataInsertNewSql($sql_data3);
+    }
+
+
+
+
+    /**
+     * import_shipping_updates - Reads a .csv with all of new shipping updates
+     *                           for each order and updates the database
+     *
+     * @param int $author_id - 
+     * @param int $entry_date - 
+     * @return nothing
+     */
+
+    public function import_shipping_updates()
+    {
+
+        $shipping_log = new Logger('import_shipping');
+        $root_path = '/var/www/html/shipping/';
+        $scanned_file = array_diff(scandir($root_path), array('..', '.'));
+
+        // Get the file information
+        $theFile = pathinfo($scanned_file[2]);
+        $theFile_name = $theFile['basename'];
+        $theFile_ext = strtolower($theFile['extension']);
+
+        $shipping_log->write('Starting The Shipping Update Importer ' . $this->the_date);
+        $shipping_log->write('Reading ' . $theFile_name);
+        $shipping_log->write(' ');
+
+        // Load the .csv file with PHPSpreadsheet
+        $input_file = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
+        $spreadsheet = $input_file->load($root_path . $theFile_name);
+
+        // Get the total row count from the .csv
+        $highestRow = $spreadsheet->getActiveSheet()
+        ->getHighestRow();
+
+        // Ignore empty .csv's - (All of them should have at least one header row)
+        if ($highestRow > 1)
+        {
+            // Iterate through each row of the .csv - Starting with the second row to exclude the header
+            // NOTE: spreadsheet rows start with 1
+            for ($i = 2; $i <= $highestRow; $i++)
+            {
+                // Get each row from the .csv and return it as an array - We need columns A through U
+                $data_array = $spreadsheet->getActiveSheet()
+                ->rangeToArray('A' . $i . ':U' . $i, null, true, true, true);
+                
+                $build_array = [
+                    'entry_id' => $data_array[$i]['A'],
+                    'title' => ucfirst(strtolower($data_array[$i]['B'])),
+                    'status' => ucfirst(strtolower($data_array[$i]['C'])),
+                    'order_recover_refurb_tracking' => strtoupper($data_array[$i]['D']),
+                    'order_recover_refurb_ship_date' => strtotime($data_array[$i]['E']),
+                    'order_recover_refurb_ship_comp' => strtoupper($data_array[$i]['F']),
+                    'order_adjustment_tracking' => strtoupper($data_array[$i]['G']),
+                    'order_adjustment_ship_date' => strtotime($data_array[$i]['H']),
+                    'order_adjustment_ship_comp' => strtoupper($data_array[$i]['I']),
+                    'order_tracking_d1' => strtoupper($data_array[$i]['J']),
+                    'order_ship_date_d1' => strtotime($data_array[$i]['K']),
+                    'order_ship_comp_d1' => strtoupper($data_array[$i]['L']),
+                    'order_tracking_d2' => strtoupper($data_array[$i]['M']),
+                    'order_ship_date_d2' => strtotime($data_array[$i]['N']),
+                    'order_ship_comp_d2' => strtoupper($data_array[$i]['O']),
+                    'order_tracking_d3' => strtoupper($data_array[$i]['P']),
+                    'order_ship_date_d3' => strtotime($data_array[$i]['Q']),
+                    'order_ship_comp_d3' => strtoupper($data_array[$i]['R']),
+                    'order_tracking_d4' => strtoupper($data_array[$i]['S']),
+                    'order_ship_date_d4' => strtotime($data_array[$i]['T']),
+                    'order_ship_comp_d4' => strtoupper($data_array[$i]['U'])
+                ];
+        
+                // Update the orders in exp_channel_data
+                static::$model->updateShippingOrderData($build_array);
+        
+                // Update the orders in exp_channel_titles
+                static::$model->updateShippingOrderTitles($build_array);
+
+                $i++;
+
+                // Log this entry
+                $shipping_log->write('Importing ' . $build_array['title']);
+                $shipping_log->write('- entry_id: ' . $build_array['entry_id']);
+                $shipping_log->write('- status: ' . $build_array['status']);
+                $shipping_log->write('---------------------------------');
+            }
+        }
+
+        $shipping_log->write(' ');
+        $shipping_log->write('The Update Shipping Importer Has Completed');
+        $shipping_log->write('################################################');
     }
 
 }

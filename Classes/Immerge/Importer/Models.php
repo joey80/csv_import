@@ -1074,16 +1074,113 @@ class Models
     *
     * @return nothing
     */
-
     public function updateAcceptedOrder()
+    {
+
+        try
+        {
+            $stmt = static::$db->prepare('UPDATE exp_channel_titles
+									SET status =  "Accepted-Exported"
+									WHERE channel_id = 2 AND status = "Accepted"');
+            $stmt->execute();
+        }
+        catch(PDOException $exception)
+        {
+            error_log($exception->getMessage());
+        }
+    }
+
+
+
+
+    /**
+    * updateShippingOrderData - Updates orders that have updated shipping information
+    *                        such as new tracking details
+    *
+    * @return nothing
+    */
+
+    public function updateShippingOrderData($data)
+    {
+        
+        try
+        {
+
+            $stmt = static::$db->prepare('UPDATE exp_channel_data
+									SET field_id_175 = :order_recover_refurb_tracking,
+                                        field_id_186 = :order_recover_refurb_ship_date,
+                                        field_id_193 = :order_recover_refurb_ship_comp,
+                                        field_id_177 = :order_adjustment_tracking,
+                                        field_id_188 = :order_adjustment_ship_date,
+                                        field_id_194 = :order_adjustment_ship_comp,
+                                        field_id_179 = :order_tracking_d1,
+                                        field_id_189 = :order_ship_date_d1,
+                                        field_id_195 = :order_ship_comp_d1,
+                                        field_id_181 = :order_tracking_d2,
+                                        field_id_190 = :order_ship_date_d2,
+                                        field_id_196 = :order_ship_comp_d2,
+                                        field_id_183 = :order_tracking_d3,
+                                        field_id_191 = :order_ship_date_d3,
+                                        field_id_197 = :order_ship_comp_d3,
+                                        field_id_185 = :order_tracking_d4,
+                                        field_id_192 = :order_ship_date_d4,
+                                        field_id_198 = :order_ship_comp_d4
+									WHERE entry_id = :entry_id');
+
+            $stmt->bindParam(':entry_id', $data['entry_id']);
+            $stmt->bindParam(':order_recover_refurb_tracking', $data['order_recover_refurb_tracking'], is_null($data['order_recover_refurb_tracking'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_recover_refurb_ship_date', $data['order_recover_refurb_ship_date'], is_null($data['order_recover_refurb_ship_date'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_recover_refurb_ship_comp', $data['order_recover_refurb_ship_comp'], is_null($data['order_recover_refurb_ship_comp'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_adjustment_tracking', $data['order_adjustment_tracking'], is_null($data['order_adjustment_tracking'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_adjustment_ship_date', $data['order_adjustment_ship_date'], is_null($data['order_adjustment_ship_date'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_adjustment_ship_comp', $data['order_adjustment_ship_comp'], is_null($data['order_adjustment_ship_comp'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_tracking_d1', $data['order_tracking_d1'], is_null($data['order_tracking_d1'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_ship_date_d1', $data['order_ship_date_d1'], is_null($data['order_ship_date_d1'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_ship_comp_d1', $data['order_ship_comp_d1'], is_null($data['order_ship_comp_d1'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_tracking_d2', $data['order_tracking_d2'], is_null($data['order_tracking_d2'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_ship_date_d2', $data['order_ship_date_d2'], is_null($data['order_ship_date_d2'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_ship_comp_d2', $data['order_ship_comp_d2'], is_null($data['order_ship_comp_d2'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_tracking_d3', $data['order_tracking_d3'], is_null($data['order_tracking_d3'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_ship_date_d3', $data['order_ship_date_d3'], is_null($data['order_ship_date_d3'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_ship_comp_d3', $data['order_ship_comp_d3'], is_null($data['order_ship_comp_d3'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_tracking_d4', $data['order_tracking_d4'], is_null($data['order_tracking_d4'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_ship_date_d4', $data['order_ship_date_d4'], is_null($data['order_ship_date_d4'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+            $stmt->bindParam(':order_ship_comp_d4', $data['order_ship_comp_d4'], is_null($data['order_ship_comp_d4'] ? PDO::PARAM_NULL : PDO::PARAM_STR));
+
+            $stmt->execute();
+
+        }
+        catch(PDOException $exception)
+        {
+            return error_log($exception->getMessage());
+        }
+    }
+
+
+
+
+    /**
+    * updateShippingOrderTitles - Updates orders that have updated shipping information
+    *                             such as new tracking details
+    *
+    * @return nothing
+    */
+
+    public function updateShippingOrderTitles($data)
     {
 
         try
         {
 
             $stmt = static::$db->prepare('UPDATE exp_channel_titles
-									SET status =  "Accepted-Exported"
-									WHERE channel_id = 2 AND status = "Accepted"');
+									SET
+                                        status = :status,
+                                        title = :title
+									WHERE entry_id = :entry_id');
+
+            $stmt->bindParam(':entry_id', $data['entry_id']);
+            $stmt->bindParam(':status', $data['status']);
+            $stmt->bindParam(':title', $data['title']);
 
             $stmt->execute();
 

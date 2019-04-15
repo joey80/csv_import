@@ -21,12 +21,13 @@ class Logger
 
     public $file;
     public $path;
+    public $extension;
 
-    public function __construct($filename, $path = null)
+    public function __construct($filename, $path = null, $extension = null)
     {
-
-        $this->file = $filename . '.log';
+        if ($extension == null ? $this->extension = '.log' : $this->extension = $extension);
         if ($path == null ? $this->path = '/var/www/logs/' : $this->path = $path);
+        $this->file = $filename . $this->extension;
         $this->deleteLog();
     }
 
@@ -73,12 +74,36 @@ class Logger
      * @return nothing
      */
 
-    public function deleteLog()
+    public function deleteLog($path = null, $fileName = null)
     {
 
-        if (file_exists($this->path . $this->file))
+        if ($path == null ? $path = $this->path : $path = $path);
+        if ($fileName == null ? $fileName = $this->file : $fileName = $fileName);
+
+        if (file_exists($path . $fileName))
         {
-            unlink($this->path . $this->file);
+            unlink($path . $fileName);
         }
+    }
+
+
+
+
+    /**
+     * saveToJSON - Saves a log in JSON format
+     *
+     * @param none
+     * @return nothing
+     */
+
+    public function saveToJSON($array, $fileName, $path = null)
+    {
+
+        if ($path == null ? $path = $this->path : $path = $path);
+        $this->deleteLog($path, $fileName);
+        
+        $fp = fopen($path . $fileName . '.json', 'w');
+        fwrite($fp, json_encode($array, JSON_PRETTY_PRINT));
+        fclose($fp);
     }
 }

@@ -12,6 +12,7 @@ use Immerge\Importer\Models as Models;
 use Immerge\Importer\Logger as Logger;
 use Box\Spout\Writer\WriterFactory;
 use Box\Spout\Common\Type;
+use DateTime;
 
 /**
  * Export - Exporter For Richey Lab
@@ -29,15 +30,18 @@ class Export
     public $order_status;
     public $change;
     public $log;
+    public $the_date;
 
     // We need the order status and if we need to change
     // the orders from 'Accepted' to 'Accepted-Exported'
     public function __construct($status, $change = NULL)
     {
+
         $this->order_status = $status;
         static::$model = Models::getInstance();
         $this->writer = WriterFactory::create(Type::CSV);
         $this->log = new Logger('export');
+        $this->the_date = (new DateTime('America/New_York'))->format('Y-m-d H:i:s');
         if ($change != NULL ? $this->change = $change : $this->change = NULL);
     }
 
@@ -50,16 +54,19 @@ class Export
     *        2. Open the spreadsheet file to start writing to it
     *        3. Build the spreadsheet
     *        4. Close the spreadsheet
+    *        5. Save the results of the export to the settings file
     *
     * @return nothing
     */
 
     public function main()
     {
+
         if ($this->change != NULL ? static::$model->updateAcceptedOrder() : NULL);
         $this->openTheSpreadsheet();
         $this->buildTheSpreadSheet();
         $this->writer->close();
+        $this->saveTheSettings();
     }
 
 
@@ -76,7 +83,7 @@ class Export
 
         // Name the file
         if ($this->order_status != NULL ? $name = $this->order_status : $name = 'export');
-        $file_name = $name . '_' . date("Y-m-d") . '.csv';
+        $file_name = $name . '_' . $this->the_date . '.csv';
 
         // Open the file to begin writing
         $this->writer->openToBrowser($file_name);
@@ -93,6 +100,7 @@ class Export
 
     public function buildTheSpreadSheet()
     {
+
         $header = static::$model->createExportHeaderRow();
         $this->writer->addRow($header);
         $this->buildEachRow();
@@ -525,8 +533,25 @@ class Export
             // Add the data to a new row in the spreadsheet
             $this->writer->addRow($new_row);
         }
+    }
 
-        $this->log->write('completed');
+
+
+
+    /**
+    * saveTheSettings - Saves the settings of the export to the settings file
+    *
+    * @return spreadsheet
+    */
+
+    public function saveTheSettings()
+    {
+        $settings = array(
+            'report name' => $this->order_status . 'Orders',
+            'status' => 'completed',
+            'date' => $this->the_date);
+
+        $this->log->saveToJSON($settings, $this->order_status);
     }
 
 }

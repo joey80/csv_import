@@ -26,7 +26,7 @@ class Logger
     public function __construct($filename, $path = null, $extension = null)
     {
 
-        if ($path == null ? $this->path = '/var/www/logs/' : $this->path = $path);
+        if ($path == null ? $this->path = '/var/www/html/logs/' : $this->path = $path);
         if ($extension == null ? $this->extension = '.log' : $this->extension = $extension);
         $this->file = $filename . $this->extension;
         $this->deleteLog($this->file);

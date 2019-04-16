@@ -155,7 +155,6 @@ class Models
         try
         {
 
-            echo 'looking up ' . $data . PHP_EOL;
             $stmt = static::$db->prepare('SELECT field_id_8 from exp_channel_data WHERE field_id_17 = :shipping AND channel_id = 3');
             $stmt->execute(array(
                 ':shipping' => $data

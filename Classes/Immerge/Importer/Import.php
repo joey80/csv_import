@@ -46,8 +46,9 @@ class Import
     public function main()
     {
         // Log the start of the importer
-        $patients_log = new Logger('import_patients');
-        $patients_log->write('Starting The Patient Importer. Date: ' . $this->the_date);
+        $patients_log = new Logger('daily_patient_import');
+        $import_title = 'Daily Patient';
+        $patients_log->write('Starting The ' . $import_title . ' Import Date: ' . $this->the_date);
         $patients_log->write('################################################');
         $patients_log->write(' ');
 
@@ -57,6 +58,7 @@ class Import
         // Read through the subfolders inside the cron folder
         $root_path = '/var/www/html/crons/';
         $scanned_folders = array_diff(scandir($root_path) , array('..', '.'));
+        $total_row_count = 0;
 
         // Scan the files that are inside each of the subfolders inside of the cron folder
         foreach ($scanned_folders as $folder)
@@ -105,11 +107,11 @@ class Import
                 }
 
                 // Get the total row count from the .csv
-                $highestRow = $spreadsheet->getActiveSheet()
-                    ->getHighestRow();
+                $highest_row = $spreadsheet->getActiveSheet()->getHighestRow();
+                $total_row_count = $total_row_count + $highest_row;
 
                 // Ignore empty .csv's - (All of them should have at least one header row)
-                if ($highestRow > 1)
+                if ($highest_row > 1)
                 {
 
                     $empty_file = false;
@@ -120,7 +122,7 @@ class Import
 
                     // Iterate through each row of the .csv - Starting with the second row to exclude the header
                     // NOTE: spreadsheet rows start with 1
-                    for ($i = 2; $i <= $highestRow; $i++)
+                    for ($i = 2; $i <= $highest_row; $i++)
                     {
 
                         // Get each row from the .csv and return it as an array - We need columns A through L
@@ -193,6 +195,7 @@ class Import
         $patients_log->write(' ');
         $patients_log->write('The Patient Importer Has Completed');
         $patients_log->write('################################################');
+        $this->saveTheSettings($patients_log, $import_title, $total_row_count);
     }
 
 
@@ -318,6 +321,29 @@ class Import
 
 
     /**
+    * saveTheSettings - Saves the settings of the export to the settings file
+    *
+    * @return spreadsheet
+    */
+
+    public function saveTheSettings($log, $title, $rows)
+    {
+        $full_title = $title . ' Import';
+
+        $settings = array(
+            'report name' => $full_title,
+            'status' => 'completed',
+            'date' => $this->the_date,
+            'rows imported' => $rows
+        );
+
+        $log->saveToJSON($settings, str_replace(' ', '-', strtolower($full_title)));
+    }
+
+
+
+
+    /**
      * import_shipping_updates - Reads a .csv with all of new shipping updates
      *                           for each order and updates the database
      *
@@ -329,7 +355,8 @@ class Import
     public function import_shipping_updates()
     {
 
-        $shipping_log = new Logger('import_shipping');
+        $shipping_log = new Logger('shipping_update_import');
+        $import_title = 'Shipping Update';
         $root_path = '/var/www/html/shipping/';
         $scanned_file = array_diff(scandir($root_path), array('..', '.'));
 
@@ -338,7 +365,7 @@ class Import
         $theFile_name = $theFile['basename'];
         $theFile_ext = strtolower($theFile['extension']);
 
-        $shipping_log->write('Starting The Shipping Update Importer ' . $this->the_date);
+        $shipping_log->write('Starting The ' . $import_title . ' Import Date: ' . $this->the_date);
         $shipping_log->write('Reading ' . $theFile_name);
         $shipping_log->write(' ');
 
@@ -347,15 +374,15 @@ class Import
         $spreadsheet = $input_file->load($root_path . $theFile_name);
 
         // Get the total row count from the .csv
-        $highestRow = $spreadsheet->getActiveSheet()
+        $highest_row = $spreadsheet->getActiveSheet()
         ->getHighestRow();
 
         // Ignore empty .csv's - (All of them should have at least one header row)
-        if ($highestRow > 1)
+        if ($highest_row > 1)
         {
             // Iterate through each row of the .csv - Starting with the second row to exclude the header
             // NOTE: spreadsheet rows start with 1
-            for ($i = 2; $i <= $highestRow; $i++)
+            for ($i = 2; $i <= $highest_row; $i++)
             {
                 // Get each row from the .csv and return it as an array - We need columns A through U
                 $data_array = $spreadsheet->getActiveSheet()
@@ -404,6 +431,7 @@ class Import
         $shipping_log->write(' ');
         $shipping_log->write('The Update Shipping Importer Has Completed');
         $shipping_log->write('################################################');
+        $this->saveTheSettings($shipping_log, $import_title, $highest_row);
     }
 
 }

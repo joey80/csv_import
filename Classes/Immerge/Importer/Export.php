@@ -31,18 +31,19 @@ class Export
     public $change;
     public $log;
     public $the_date;
+    public $total_row_count;
 
     // We need the order status and if we need to change
     // the orders from 'Accepted' to 'Accepted-Exported'
-    public function __construct($status, $change = NULL)
+    public function __construct($status, $change = null)
     {
 
         $this->order_status = $status;
         static::$model = Models::getInstance();
         $this->writer = WriterFactory::create(Type::CSV);
-        $this->log = new Logger('export');
+        $this->log = new Logger(str_replace('-', '_', strtolower($this->order_status)));
         $this->the_date = (new DateTime('America/New_York'))->format('m-d-Y H:i:s');
-        if ($change != NULL ? $this->change = $change : $this->change = NULL);
+        if ($change != null ? $this->change = $change : $this->change = null);
     }
 
 
@@ -62,12 +63,15 @@ class Export
     public function main()
     {
 
-        if ($this->change != NULL ? static::$model->updateAcceptedOrder() : NULL);
+        if ($this->change != null ? static::$model->updateAcceptedOrder() : null);
         $this->openTheSpreadsheet();
         $this->buildTheSpreadSheet();
         $this->writer->close();
-        $this->saveTheSettings();
-        $this->log->write('youre the best');
+        
+        $this->log->write(' ');
+        $this->log->write('The ' . $this->order_status . ' Export Has Completed');
+        $this->log->write('################################################');
+        $this->saveTheSettings($this->total_row_count);
     }
 
 
@@ -101,6 +105,8 @@ class Export
 
     public function buildTheSpreadSheet()
     {
+        $this->log->write('Starting The ' . $this->order_status . ' Export ' . $this->the_date);
+        $this->log->write(' ');
 
         $header = static::$model->createExportHeaderRow();
         $this->writer->addRow($header);
@@ -119,6 +125,7 @@ class Export
     public function buildEachRow()
     {
         $orders = static::$model->getAllOrders($this->order_status);
+        $this->total_row_count = 0;
 
         foreach ($orders as $order_id)
         {
@@ -533,6 +540,7 @@ class Export
             
             // Add the data to a new row in the spreadsheet
             $this->writer->addRow($new_row);
+            $this->total_row_count++;
         }
     }
 
@@ -545,14 +553,16 @@ class Export
     * @return spreadsheet
     */
 
-    public function saveTheSettings()
+    public function saveTheSettings($rows)
     {
         $settings = array(
             'report name' => $this->order_status . ' Orders',
             'status' => 'completed',
-            'date' => $this->the_date);
+            'date' => $this->the_date,
+            'rows exported' => $rows
+        );
 
-        $this->log->saveToJSON($settings, $this->order_status);
+        $this->log->saveToJSON($settings, strtolower($this->order_status));
     }
 
 }

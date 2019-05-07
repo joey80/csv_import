@@ -1195,25 +1195,25 @@ class Models
 
 
     /**
-    * getOrdersOlderThanSixMonths - Deletes all orders that are older than six months
+    * getClosedOrdersOlderThanSixMonths - Deletes all orders that are older than six months
     *
     * @return $results - An array of membership data
     */
 
-    public function getOrdersOlderThanSixMonths()
+    public function getClosedOrdersOlderThanSixMonths()
     {
 
         try
         {
 
             $stmt = static::$db->prepare("SELECT entry_id FROM exp_channel_titles WHERE channel_id = 2 AND status = 'closed' AND entry_date <= UNIX_TIMESTAMP(NOW() - INTERVAL 6 MONTH)");
-            
             $stmt->execute();
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $results = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
             if ($results !== false)
             {
-                return array_shift($results);
+                return $results;
             }
 
         }
@@ -1227,27 +1227,19 @@ class Models
 
 
     /**
-    * deleteOrdersOlderThanSixMonths - Deletes all orders that are older than six months
+    * deleteClosedOrdersOlderThanSixMonths - Deletes all orders that are older than six months
     *
     * @return nothing
     */
 
-    public function deleteOrdersOlderThanSixMonths($entry_id)
+    public function deleteClosedOrdersOlderThanSixMonths($entry_id)
     {
 
         try
         {
-            // clean this up and add the title table
-            $stmt = static::$db->prepare("DELETE FROM exp_channel_data WHERE entry_id = $entry_id");
-            
+            $stmt = static::$db->prepare('DELETE d, t FROM exp_channel_data d INNER JOIN exp_channel_titles t ON d.entry_id = t.entry_id WHERE d.entry_id = :entry_id');
+            $stmt->bindParam(':entry_id', $entry_id);
             $stmt->execute();
-            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            if ($result !== false)
-            {
-                return array_shift($result);
-            }
-
         }
         catch(PDOException $exception)
         {

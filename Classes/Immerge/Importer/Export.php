@@ -151,6 +151,7 @@ class Export
             $mx11 = static::$model->getMatrixColumns($mx11Data = ['entry_id' => $order_id, 'field_id' => '120']);
             $mx12 = static::$model->getMatrixColumns($mx12Data = ['entry_id' => $order_id, 'field_id' => '121']);
 
+            // Note: Each key needs to be a unique value in order to not get skipped when writing to the .csv file
             $new_row = [
                 'A - title' => $titles['title'],
                 'B - url_title' => $titles['url_title'],

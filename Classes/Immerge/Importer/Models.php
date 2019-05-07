@@ -1074,7 +1074,7 @@ class Models
     *
     * @return nothing
     */
-    public function updateAcceptedOrder()
+    public function updateAcceptedOrders()
     {
 
         try
@@ -1092,7 +1092,7 @@ class Models
 
 
 
-
+    
     /**
     * updateShippingOrderData - Updates orders that have updated shipping information
     *                        such as new tracking details
@@ -1183,6 +1183,70 @@ class Models
             $stmt->bindParam(':title', $data['title']);
 
             $stmt->execute();
+
+        }
+        catch(PDOException $exception)
+        {
+            error_log($exception->getMessage());
+        }
+    }
+
+
+
+
+    /**
+    * getOrdersOlderThanSixMonths - Deletes all orders that are older than six months
+    *
+    * @return $results - An array of membership data
+    */
+
+    public function getOrdersOlderThanSixMonths()
+    {
+
+        try
+        {
+
+            $stmt = static::$db->prepare("SELECT entry_id FROM exp_channel_titles WHERE channel_id = 2 AND status = 'closed' AND entry_date <= UNIX_TIMESTAMP(NOW() - INTERVAL 6 MONTH)");
+            
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($results !== false)
+            {
+                return array_shift($results);
+            }
+
+        }
+        catch(PDOException $exception)
+        {
+            error_log($exception->getMessage());
+        }
+    }
+
+
+
+
+    /**
+    * deleteOrdersOlderThanSixMonths - Deletes all orders that are older than six months
+    *
+    * @return nothing
+    */
+
+    public function deleteOrdersOlderThanSixMonths($entry_id)
+    {
+
+        try
+        {
+            // clean this up and add the title table
+            $stmt = static::$db->prepare("DELETE FROM exp_channel_data WHERE entry_id = $entry_id");
+            
+            $stmt->execute();
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($result !== false)
+            {
+                return array_shift($result);
+            }
 
         }
         catch(PDOException $exception)

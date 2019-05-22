@@ -360,9 +360,9 @@ class Models
         {
 
             $stmt = static::$db->prepare('INSERT INTO exp_channel_titles (site_id, channel_id, author_id, title, url_title, status,
-																versioning_enabled, allow_comments, entry_date, year, month, day)
+																status_id, versioning_enabled, allow_comments, entry_date, year, month, day)
 
-																VALUES (:site_id, :channel_id, :author_id, :title, :url_title, :status,
+																VALUES (:site_id, :channel_id, :author_id, :title, :url_title, :status, :status_id,
 																		:versioning_enabled, :allow_comments, :entry_date, :year, :month, :day)');
 
             $stmt->bindParam(':site_id', $data['site_id']);
@@ -371,6 +371,7 @@ class Models
             $stmt->bindParam(':title', $data['title']);
             $stmt->bindParam(':url_title', $data['url_title']);
             $stmt->bindParam(':status', $data['status']);
+            $stmt->bindParam(':status_id', $data['status_id']);
             $stmt->bindParam(':versioning_enabled', $data['versioning_enabled']);
             $stmt->bindParam(':allow_comments', $data['allow_comments']);
             $stmt->bindParam(':entry_date', $data['entry_date']);

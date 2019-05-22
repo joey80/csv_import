@@ -254,6 +254,7 @@ class Import
             'title' => $this->sql_data['patient_firstname'] . ' ' . $this->sql_data['patient_lastname'],
             'url_title' => strtolower($this->sql_data['patient_firstname'] . '-' . $this->sql_data['patient_lastname']),
             'status' => 'open',
+            'status_id' => 1,
             'versioning_enabled' => 'y',
             'allow_comments' => 'n',
             'entry_date' => $entry_date,

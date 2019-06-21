@@ -593,7 +593,11 @@ class Models
 
         try
         {
-
+            // cd.field_id_426 = cd.field_id_57 AS order_scan_attachements,
+            // cd.field_id_59 AS order_images_video,
+            // cd.field_id_409 AS order_practice_select,
+            // cd.field_id_410 AS order_doctor_select,
+            // cd.field_id_411 AS order_assistant_select,
             $stmt = static::$db->prepare('SELECT
                                     cd.field_id_58 AS order_date_scanned,
                                     cd.field_id_53 AS order_date_of_pt,
@@ -653,8 +657,6 @@ class Models
                                     cd.field_id_54 AS order_pt_coverage_frequency,
                                     cd.field_id_55 AS order_source_of_foot_impressions,
                                     cd.field_id_56 AS order_weight_bearing_arch_type,
-                                    cd.field_id_57 AS order_scan_attachements,
-                                    cd.field_id_59 AS order_images_video,
                                     cd.field_id_60 AS order_device_type_d1,
                                     cd.field_id_62 AS order_top_cover_d1,
                                     cd.field_id_61 AS order_ppt_layer_d1,
@@ -928,9 +930,6 @@ class Models
                                     cd.field_id_159 AS order_elog,
                                     cd.field_id_417 AS order_date_accepted,
                                     cd.field_id_161 AS order_date_shipped,
-                                    cd.field_id_409 AS order_practice_select,
-                                    cd.field_id_410 AS order_doctor_select,
-                                    cd.field_id_411 AS order_assistant_select,
                                     cd.field_id_407 AS order_date_submitted
                                     FROM exp_channel_data cd
                                     WHERE cd.entry_id = :entry_id AND cd.channel_id = 2');

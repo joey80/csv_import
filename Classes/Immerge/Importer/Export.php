@@ -63,7 +63,7 @@ class Export
     public function main()
     {
 
-        if ($this->change != null ? static::$model->updateAcceptedOrder() : null);
+        if ($this->change != null ? static::$model->updateAcceptedOrders() : null);
         $this->openTheSpreadsheet();
         $this->buildTheSpreadSheet();
         $this->writer->close();
@@ -150,7 +150,13 @@ class Export
             $mx10 = static::$model->getMatrixColumns($mx10Data = ['entry_id' => $order_id, 'field_id' => '119']);
             $mx11 = static::$model->getMatrixColumns($mx11Data = ['entry_id' => $order_id, 'field_id' => '120']);
             $mx12 = static::$model->getMatrixColumns($mx12Data = ['entry_id' => $order_id, 'field_id' => '121']);
-
+            
+            // 'CD - order_scan_attachements' => $results['order_scan_attachements'],
+            // 'CF - order_images_video' => $results['order_images_video'],
+            // 'OE - order_practice_select' => $results['order_practice_select'],
+            // 'OF - order_doctor_select' => $results['order_doctor_select'],
+            // 'OG - order_assistant_select' => $results['order_assistant_select']
+            
             // Note: Each key needs to be a unique value in order to not get skipped when writing to the .csv file
             $new_row = [
                 'A - title' => $titles['title'],
@@ -234,9 +240,9 @@ class Export
                 'CA - order_pt_coverage_frequency' => $results['order_pt_coverage_frequency'],
                 'CB - order_source_of_foot_impressions' => $results['order_source_of_foot_impressions'],
                 'CC - order_weight_bearing_arch_type' => $results['order_weight_bearing_arch_type'],
-                'CD - order_scan_attachements' => $results['order_scan_attachements'],
+                'CD - order_scan_attachements' => 'null',
                 'CE - order_date_scanned' => $results['order_date_scanned'],
-                'CF - order_images_video' => $results['order_images_video'],
+                'CF - order_images_video' => 'null',
                 'CG - order_device_type_d1' => $results['order_device_type_d1'],
                 'CH - order_top_cover_d1' => $results['order_top_cover_d1'],
                 'CI - order_ppt_layer_d1' => $results['order_ppt_layer_d1'],
@@ -547,9 +553,9 @@ class Export
                 'OB - order_date_accepted' => $results['order_date_accepted'],
                 'OC - order_date_submitted' => $results['order_date_submitted'],
                 'OD - order_date_shipped' => $results['order_date_shipped'],
-                'OE - order_practice_select' => $results['order_practice_select'],
-                'OF - order_doctor_select' => $results['order_doctor_select'],
-                'OG - order_assistant_select' => $results['order_assistant_select']
+                'OE - order_practice_select' => 'null',
+                'OF - order_doctor_select' => 'null',
+                'OG - order_assistant_select' => 'null'
             ];
             
             // Add the data to a new row in the spreadsheet
